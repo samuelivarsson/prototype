@@ -23,7 +23,7 @@ class Output extends Component {
     // componentWillUnmount() {}
 
     render() {
-        return <label className="home-text03">Label</label>;
+        return <div className="home-label">{this.props.output}</div>;
     }
 }
 
