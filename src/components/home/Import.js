@@ -1,5 +1,6 @@
 import React, { Component } from "react";
 import "./Home.css";
+import { CSVToArray, CSVConcat } from "./CSVParser";
 
 class Import extends Component {
     constructor(props) {
@@ -19,19 +20,17 @@ class Import extends Component {
         }
     }
 
-    componentDidUpdate(prevProps) {
-        if (prevProps !== this.props) {
-            console.log("Props updated in import");
-            console.log(this.props);
-        }
-    }
+    //componentDidUpdate(prevProps) {
+    //    if (prevProps !== this.props) {
+    //
+    //    }
+    //}
 
     openRequirementsFile() {
         document.getElementById("requirementsFile").click();
     }
 
     openTestFile() {
-        console.log("here");
         document.getElementById("testFile").click();
     }
 
@@ -45,19 +44,20 @@ class Import extends Component {
             return;
         }
 
-        console.log(requirementsFile.name);
-        console.log(requirementsInput);
-
-        this.setState({
-            chosenRequirementFile: requirementsFile.name,
-        });
-
         requirementsReader.readAsText(requirementsFile);
 
         requirementsReader.addEventListener(
             "load",
             () => {
-                this.props.setRequirementsText(requirementsReader.result);
+                let rows = CSVConcat(
+                    CSVToArray(requirementsReader.result, ",")
+                );
+
+                this.props.setRequirementsArray(rows);
+
+                this.setState({
+                    chosenRequirementFile: requirementsFile.name,
+                });
             },
             "error",
             () => {
@@ -76,19 +76,17 @@ class Import extends Component {
             return;
         }
 
-        console.log(testFile.name);
-        console.log(testInput);
-
-        this.setState({
-            chosenTestFile: testFile.name,
-        });
-
         testReader.readAsText(testFile);
 
         testReader.addEventListener(
             "load",
             () => {
-                this.props.setTestText(testReader.result);
+                var rows = CSVConcat(CSVToArray(testReader.result, ","));
+
+                this.props.setTestArray(rows);
+                this.setState({
+                    chosenTestFile: testFile.name,
+                });
             },
             "error",
             () => {
@@ -98,6 +96,7 @@ class Import extends Component {
     }
 
     render() {
+        //console.log(this.state);
         return (
             <>
                 <button

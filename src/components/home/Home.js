@@ -13,8 +13,8 @@ class Home extends Component {
             requirementsText: "",
             testText: "",
         };
-        this.setRequirementsText = this.setRequirementsText.bind(this);
-        this.setTestText = this.setTestText.bind(this);
+        this.setRequirementsArray = this.setRequirementsArray.bind(this);
+        this.setTestArray = this.setTestArray.bind(this);
     }
 
     componentDidMount() {
@@ -23,19 +23,21 @@ class Home extends Component {
         });
     }
 
-    setRequirementsText(requirementsText) {
-        console.log("Setting prompt in home callback to: " + requirementsText);
-        this.setState((state, props) => {
-            return { requirementsText: requirementsText };
+    setRequirementsArray(requirementsArray) {
+        console.log(requirementsArray);
+        this.setState({
+            requirementsArray: requirementsArray,
         });
     }
 
-    setTestText(testText) {
-        console.log("Setting prompt in home callback to: " + testText);
-        this.setState((state, props) => {
-            return { testText: testText };
+    setTestArray(testArray) {
+        console.log(testArray);
+        this.setState({
+            testArray: testArray,
         });
     }
+
+    promptBuilder() {}
 
     render() {
         return (
@@ -54,8 +56,8 @@ class Home extends Component {
                     </div>
                     <div className="home-bottom-buttons">
                         <Import
-                            setTestText={this.setTestText}
-                            setRequirementsText={this.setRequirementsText}
+                            setTestArray={this.setTestArray}
+                            setRequirementsArray={this.setRequirementsArray}
                         />
 
                         <Send prompt={this.state.prompt} />
