@@ -2,13 +2,22 @@ import React, { Component } from "react";
 import PropTypes from "prop-types";
 import { Configuration, OpenAIApi } from "openai";
 import "./Home.css";
+import {
+    testPrompt,
+    requirementPrompt,
+    requirementIsTestedPrompt,
+} from "./Prompt";
 // import readlineSync from "readline-sync";
 
 class Send extends Component {
     constructor(props) {
         super(props);
-        this.state = { configuration: null, openai: null, response: null };
+        this.state = {
+            testObjects: [],
+            requirementObjects: [],
+        };
         this.handleSendClick = this.handleSendClick.bind(this);
+        this.sendBatch = this.sendBatch.bind(this);
     }
 
     // componentWillMount() {}
@@ -24,7 +33,7 @@ class Send extends Component {
 
     componentDidUpdate(prevProps, prevState) {
         console.log("Props updated");
-        console.log(this.props);
+        //console.log(this.props);
     }
 
     // componentWillReceiveProps(nextProps) {}
@@ -40,69 +49,144 @@ class Send extends Component {
     setUpConfig() {}
 
     async handleSendClick() {
-        const configuration = new Configuration({
-            organization: "org-Bc7ZnCV6EeMA8vHscXbIqeA5",
-            apiKey: process.env.REACT_APP_OPENAI_API_KEY,
-        });
-        // this.setState({
-        //     configuration: configuration,
-        //     openai: openai,
-        //     response: response,
-        // });
-        const openai = new OpenAIApi(configuration);
-
-        const history = [];
-
-        // while (true) {
-        // const user_input = readlineSync.question("Your input: ");
-        if (!this.props.prompt) {
-            console.error("Prompt is null!");
+        if (!this.props.requirementsArray) {
+            console.error("Requirements array is null!");
             return;
         }
-        const user_input = this.props.prompt;
-
-        const messages = [];
-        for (const [input_text, completion_text] of history) {
-            messages.push({ role: "user", content: input_text });
-            messages.push({ role: "assistant", content: completion_text });
+        if (!this.props.testArray) {
+            console.error("Test array is null!");
+            return;
         }
-
-        messages.push({ role: "user", content: user_input });
-
-        try {
-            const completion = await openai.createChatCompletion({
-                model: "gpt-3.5-turbo",
-                messages: messages,
+        // This is a mock request function, could be a `request` call
+        // or a database query; whatever it is, it MUST return a Promise.
+        const sendRequirementPrompt = (index) => {
+            const configuration = new Configuration({
+                organization: "org-Bc7ZnCV6EeMA8vHscXbIqeA5",
+                apiKey: process.env.REACT_APP_OPENAI_API_KEY,
             });
+            const openai = new OpenAIApi(configuration);
 
-            const completion_text = completion.data.choices[0].message.content;
-            console.log(completion_text);
-
-            history.push([user_input, completion_text]);
-
-            // const user_input_again = readlineSync.question(
-            //     "\nWould you like to continue the conversation? (Y/N)"
-            // );
-            // if (user_input_again.toUpperCase() === "N") {
-            //     return;
-            // } else if (user_input_again.toUpperCase() !== "Y") {
-            //     console.log("Invalid input. Please enter 'Y' or 'N'.");
-            //     return;
-            // }
-        } catch (error) {
-            if (error.response) {
-                console.log(error.response.status);
-                console.log(error.response.data);
-            } else {
-                console.log(error.message);
+            if (!this.props.requirementsArray) {
+                console.error("requirementsArray is null!");
+                return;
             }
+
+            const messages = [];
+            const user_input = requirementPrompt(
+                this.props.requirementsArray[0] +
+                    "\n" +
+                    this.props.requirementsArray[index]
+            );
+            messages.push({ role: "user", content: user_input });
+
+            try {
+                return openai.createChatCompletion({
+                    model: "gpt-3.5-turbo",
+                    messages: messages,
+                    temperature: 0,
+                });
+            } catch (error) {
+                if (error.response) {
+                    console.log(error.response.status);
+                    console.log(error.response.data);
+                } else {
+                    console.log(error.message);
+                }
+            }
+        };
+
+        const sendTestPrompt = (index) => {
+            const configuration = new Configuration({
+                organization: "org-Bc7ZnCV6EeMA8vHscXbIqeA5",
+                apiKey: process.env.REACT_APP_OPENAI_API_KEY,
+            });
+            const openai = new OpenAIApi(configuration);
+
+            if (!this.props.testArray) {
+                console.error("testArray is null!");
+                return;
+            }
+
+            const messages = [];
+            const user_input = testPrompt(
+                this.props.testArray[0] + "\n" + this.props.testArray[index]
+            );
+            messages.push({ role: "user", content: user_input });
+
+            try {
+                return openai.createChatCompletion({
+                    model: "gpt-3.5-turbo",
+                    messages: messages,
+                    temperature: 0,
+                });
+            } catch (error) {
+                if (error.response) {
+                    console.log(error.response.status);
+                    console.log(error.response.data);
+                } else {
+                    console.log(error.message);
+                }
+            }
+        };
+
+        const batch = [];
+        for (let i = 1; i < this.props.requirementsArray.length; i++) {
+            batch.push(function () {
+                return sendRequirementPrompt(i);
+            });
         }
-        // }
+        for (let i = 1; i < this.props.testArray.length; i++) {
+            batch.push(function () {
+                return sendTestPrompt(i);
+            });
+        }
+
+        await this.sendBatch(batch);
+
+        //for (let i = 1; i < this.props.requirementsArray.length; i++) {
+        //    batch.push(() => {
+        //        sendRequirementPrompt(i);
+        //    });
+        //}
+    }
+
+    async sendBatch(batch) {
+        try {
+            console.log("-- sending batch --");
+            const completions = await Promise.all(batch.map((f) => f()));
+            for (let i = 0; i < completions.length; i++) {
+                const completion_text =
+                    completions[i].data.choices[0].message.content;
+                if (completion_text.startsWith('{"ID"')) {
+                    this.setState((prevState) => ({
+                        testObjects: [
+                            ...prevState.testObjects,
+                            completion_text,
+                        ],
+                    }));
+                } else {
+                    this.setState((prevState) => ({
+                        requirementObjects: [
+                            ...prevState.requirementObjects,
+                            completion_text,
+                        ],
+                    }));
+                }
+            }
+            console.log(this.state.requirementObjects);
+            console.log(this.state.testObjects);
+            console.log("DONE!!!!!!!!!!");
+        } catch (err) {
+            console.error(err);
+        }
     }
 
     render() {
         return (
-            <button className="home-button3 button">
+            <button
+                className="home-button3 button"
+                onClick={this.handleSendClick}
+            >
                 <span className="home-text10">
                     <span>Run Analysis</span>
                     <br></br>

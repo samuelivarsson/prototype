@@ -10,8 +10,8 @@ class Home extends Component {
         this.state = {
             prompt: "",
             output: "error",
-            requirementsText: "",
-            testText: "",
+            requirementsArray: "",
+            testArray: "",
         };
         this.setRequirementsArray = this.setRequirementsArray.bind(this);
         this.setTestArray = this.setTestArray.bind(this);
@@ -60,7 +60,11 @@ class Home extends Component {
                             setRequirementsArray={this.setRequirementsArray}
                         />
 
-                        <Send prompt={this.state.prompt} />
+                        <Send
+                            prompt={this.state.prompt}
+                            requirementsArray={this.state.requirementsArray}
+                            testArray={this.state.testArray}
+                        />
                     </div>
                 </div>
             </div>

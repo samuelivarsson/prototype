@@ -11,7 +11,7 @@
         "react-router-dom": "^5.2.0"
     },
     "scripts": {
-        "start": "craco start",
+        "start": "BROWSER=none craco start",
         "build": "craco build",
         "test": "craco test --env=jsdom",
         "eject": "craco eject"
