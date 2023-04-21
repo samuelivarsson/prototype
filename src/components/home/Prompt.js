@@ -12,12 +12,20 @@ export function requirementPrompt(file_content) {
     );
 }
 
+function getTestCasesString(test_cases) {
+    var res = "";
+    for (let i = 0; i < test_cases.length; i++) {
+        res += test_cases[i] + "\n\n";
+    }
+    return res;
+}
+
 export function requirementIsTestedPrompt(test_cases, requirement) {
     return (
         "Consider these test cases:\n\n" +
-        test_cases +
+        getTestCasesString(test_cases) +
         "\n\nI have this requirement:\n\n" +
         requirement +
-        "\n\nBased on the description of the requirement, would you say that any of these test cases are testing the requirement? If yes, answer ONLY with all test cases that are testing the requirement in the following form:\n\n{[insert test id 1], [insert test id 2], [insert test id 3], …}\n\nDO NOT ADD ANY TEXT BEFORE OR AFTER THE CURLY BRACKETS. If no, answer ONLY “NO” and nothing else."
+        "Based on the description of the requirement, would you say that any of these test cases are testing the requirement? If yes, answer ONLY with all test cases that are testing the requirement in the following form:\n\n{“requirementID”: [insert requirement id], “tests”: “[insert test id 1], [insert test id 2], [insert test id 3], …”}\n\nDO NOT ADD ANY TEXT BEFORE OR AFTER THE CURLY BRACKETS. If no, answer ONLY in the following form:\n\n{“requirementID”: [insert requirement id], “tests”: “”}"
     );
 }
