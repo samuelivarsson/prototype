@@ -26,6 +26,6 @@ export function requirementIsTestedPrompt(test_cases, requirement) {
         getTestCasesString(test_cases) +
         "\n\nI have this requirement:\n\n" +
         requirement +
-        "Based on the description of the requirement, would you say that any of these test cases are testing the requirement? If yes, answer ONLY with all test cases that are testing the requirement in the following form:\n\n{“requirementID”: [insert requirement id], “tests”: “[insert test id 1], [insert test id 2], [insert test id 3], …”}\n\nDO NOT ADD ANY TEXT BEFORE OR AFTER THE CURLY BRACKETS. If no, answer ONLY in the following form:\n\n{“requirementID”: [insert requirement id], “tests”: “”}"
+        "\n\nBased on the description of the requirement, would you say that any of these test cases are testing the requirement? If yes, answer ONLY with the test case(s) that are testing the requirement in the following form:\n\n{“requirementID”: [insert requirement id], “tests”: “[insert test id 1], [insert test id 2], [insert test id 3], …”}\n\nDO NOT ADD ANY TEXT BEFORE OR AFTER THE CURLY BRACKETS. If no, answer ONLY in the following form:\n\n{“requirementID”: [insert requirement id], “tests”: “”}"
     );
 }

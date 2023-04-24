@@ -16,6 +16,7 @@ class Send extends Component {
             testObjects: [],
             requirementObjects: [],
             requirementsWithTests: [],
+            awaitingResponse: false,
         };
         this.handleSendClick = this.handleSendClick.bind(this);
         this.sendBatch = this.sendBatch.bind(this);
@@ -25,6 +26,7 @@ class Send extends Component {
         this.sendRequirementPrompt = this.sendRequirementPrompt.bind(this);
         this.findRequirementId = this.findRequirementId.bind(this);
         this.findRequirementTests = this.findRequirementTests.bind(this);
+        this.renderLoading = this.renderLoading.bind(this);
     }
 
     // componentWillMount() {}
@@ -62,9 +64,9 @@ class Send extends Component {
 
         try {
             return openai.createChatCompletion({
-                model: "gpt-3.5-turbo",
+                model: "gpt-3.5-turbo-0301",
                 messages: messages,
-                temperature: 0,
+                temperature: 0.7,
             });
         } catch (error) {
             if (error.response) {
@@ -96,9 +98,9 @@ class Send extends Component {
 
         try {
             return openai.createChatCompletion({
-                model: "gpt-3.5-turbo",
+                model: "gpt-3.5-turbo-0301",
                 messages: messages,
-                temperature: 0,
+                temperature: 0.7,
             });
         } catch (error) {
             if (error.response) {
@@ -131,8 +133,9 @@ class Send extends Component {
 
         try {
             return openai.createChatCompletion({
-                model: "gpt-3.5-turbo",
+                model: "gpt-3.5-turbo-0301",
                 messages: messages,
+                temperature: 0.7,
             });
         } catch (error) {
             if (error.response) {
@@ -147,6 +150,7 @@ class Send extends Component {
     async sendBatch(batch) {
         try {
             console.log("-- sending batch --");
+            console.log(batch.length);
             return await Promise.all(batch.map((f) => f()));
         } catch (err) {
             console.error(err);
@@ -166,10 +170,14 @@ class Send extends Component {
             });
         }
         const completions = await this.sendBatch(batch);
+        if (completions == null) {
+            console.error("No completions were fetched!");
+            return;
+        }
         for (let i = 0; i < completions.length; i++) {
             const completion_text =
                 completions[i].data.choices[0].message.content;
-            if (completion_text.startsWith('{"ID"')) {
+            if (completion_text.includes('"ID": "')) {
                 this.setState((prevState) => ({
                     testObjects: [...prevState.testObjects, completion_text],
                 }));
@@ -194,7 +202,6 @@ class Send extends Component {
             console.error("Could not create first split!");
             return;
         }
-        console.log(firstSplit.split('"'));
         const secondSplit = firstSplit.split('"')[0];
         if (secondSplit == null) {
             console.log(completion_text);
@@ -239,6 +246,10 @@ class Send extends Component {
     }
 
     async handleSendClick() {
+        if (this.state.awaitingResponse) {
+            console.log("You are already analyzing!");
+            return;
+        }
         if (!this.props.requirementsArray) {
             console.error("Requirements array is null!");
             return;
@@ -247,6 +258,21 @@ class Send extends Component {
             console.error("Test array is null!");
             return;
         }
+
+        if (this.props.requirementsArray.length == 0) {
+            console.log("You have not loaded a requirement file!");
+            return;
+        }
+        if (this.props.testArray.length == 0) {
+            console.log("You have not loaded a test file!");
+            return;
+        }
+
+        this.renderLoading(true);
+        this.props.setResultArray([]);
+        this.setState({
+            awaitingResponse: true,
+        });
         // This is a mock request function, could be a `request` call
         // or a database query; whatever it is, it MUST return a Promise.
 
@@ -254,19 +280,42 @@ class Send extends Component {
         await this.sendSecondBatch();
         console.log(this.state);
         console.log(this.state.requirementsWithTests);
+        this.props.setResultArray(this.state.requirementsWithTests);
+        this.setState({
+            awaitingResponse: false,
+        });
+    }
+
+    renderLoading(bool) {
+        this.props.setLoadingFlag(bool);
     }
 
     render() {
         return (
-            <button
-                className="home-button3 button"
-                onClick={this.handleSendClick}
-            >
-                <span className="home-text10">
-                    <span>Run Analysis</span>
-                    <br></br>
-                </span>
-            </button>
+            <>
+                {this.state.awaitingResponse ? (
+                    <button
+                        className="home-button3 button"
+                        onClick={this.handleSendClick}
+                        disabled={true}
+                    >
+                        <span className="home-text10">
+                            <span>Run Analysis</span>
+                            <br></br>
+                        </span>
+                    </button>
+                ) : (
+                    <button
+                        className="home-button3 button"
+                        onClick={this.handleSendClick}
+                    >
+                        <span className="home-text10">
+                            <span>Run Analysis</span>
+                            <br></br>
+                        </span>
+                    </button>
+                )}
+            </>
         );
     }
 }

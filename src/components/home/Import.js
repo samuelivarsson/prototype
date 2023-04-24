@@ -118,6 +118,7 @@ class Import extends Component {
                     className="home-textinput input"
                     id="requirementsFile"
                     onChange={this.handleRequirementImport}
+                    accept=".csv"
                 />
                 <button
                     className="home-button2 button"
@@ -138,6 +139,7 @@ class Import extends Component {
                     className="home-textinput input"
                     id="testFile"
                     onChange={this.handleTestImport}
+                    accept=".csv"
                 />
             </>
         );
