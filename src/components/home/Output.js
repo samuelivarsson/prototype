@@ -1,13 +1,26 @@
 import React, { Component } from "react";
 import PropTypes from "prop-types";
 import "./Output.css";
+import { testSuggestionPrompt } from "./Prompt";
+import { Configuration, OpenAIApi } from "openai";
 
 class Output extends Component {
     constructor(props) {
         super(props);
-        this.state = {};
+        this.state = {
+            suggestionResponse: {},
+        };
         this.renderResultRows = this.renderResultRows.bind(this);
         this.renderResultRow = this.renderResultRow.bind(this);
+        this.findTextInObject = this.findTextInObject.bind(this);
+        this.getDescription = this.getDescription.bind(this);
+        this.getRequirementDescription = this.getTestDescription =
+            this.getTestDescription.bind(this);
+        this.getTestCasesWithDescription =
+            this.getTestCasesWithDescription.bind(this);
+        this.getRequirementDescription.bind(this);
+        this.sendTestSuggestionPrompt =
+            this.sendTestSuggestionPrompt.bind(this);
     }
 
     // componentWillMount() {}
@@ -24,6 +37,68 @@ class Output extends Component {
 
     // componentWillUnmount() {}
 
+    findTextInObject(object, text_to_find) {
+        const firstSplit = object.split('"' + text_to_find + '": "')[1];
+        if (firstSplit == null) {
+            console.log(object);
+            console.log(text_to_find);
+            console.error("Could not create first split!");
+            return;
+        }
+        const secondSplit = firstSplit.split('"')[0];
+        if (secondSplit == null) {
+            console.log(object);
+            console.log(text_to_find);
+            console.error("Could not create second split!");
+            return;
+        }
+        return secondSplit;
+    }
+
+    getDescription(objects, objectId, type) {
+        if (objects == null) {
+            console.error("objects is null!");
+            return;
+        }
+        for (let i = 0; i < objects.length; i++) {
+            const object = objects[i];
+            if (object.includes(objectId)) {
+                const text_to_find = type == "TEST" ? "desc" : objectId;
+                return this.findTextInObject(object, text_to_find);
+            }
+        }
+        return "";
+    }
+
+    getRequirementDescription(requirementId) {
+        const requirementObjects = this.props.requirementObjects;
+        const type = "REQUIREMENT";
+        return this.getDescription(requirementObjects, requirementId, type);
+    }
+
+    getTestDescription(testId) {
+        const testObjects = this.props.testObjects;
+        const type = "TEST";
+        return this.getDescription(testObjects, testId, type);
+    }
+
+    getTestCasesWithDescription(testsString) {
+        const testsArray = testsString.split(", ");
+        var result = "";
+        for (let i = 0; i < testsArray.length - 1; i++) {
+            const testId = testsArray[i];
+            const description = this.getTestDescription(testId);
+            result += testId + " - " + description + "\n\n";
+        }
+
+        // Add last element without new lines
+        const testId = testsArray[testsArray.length - 1];
+        const description = this.getTestDescription(testId);
+        result += testId + " - " + description;
+
+        return result;
+    }
+
     renderResultRows() {
         if (!this.props) {
             console.log("Props is null in Output.js!");
@@ -36,44 +111,89 @@ class Output extends Component {
                     {this.renderResultRow(result.ID, result.tests)}
                 </div>
             );
-
-            // <RenderResultRow
-            //     key={result.ID}
-            //     requirementId={result.ID}
-            //     tests={result.tests}
-            // />
         });
+    }
+
+    renderTestedByList() {}
+
+    async sendTestSuggestionPrompt(requirementId) {
+        const configuration = new Configuration({
+            organization: "org-Bc7ZnCV6EeMA8vHscXbIqeA5",
+            apiKey: process.env.REACT_APP_OPENAI_API_KEY,
+        });
+        const openai = new OpenAIApi(configuration);
+
+        if (!this.props.requirementsArray) {
+            console.error("requirementsArray is null!");
+            return;
+        }
+
+        const messages = [];
+
+        const user_input = testSuggestionPrompt(
+            this.getRequirementDescription(requirementId)
+        );
+        messages.push({ role: "user", content: user_input });
+
+        try {
+            const completion = await openai.createChatCompletion({
+                model: "gpt-3.5-turbo-0301",
+                messages: messages,
+                temperature: 0.7,
+            });
+            const completion_text = completion.data.choices[0].message.content;
+            this.setState({
+                suggestionResponse: { [requirementId]: completion_text },
+            });
+        } catch (error) {
+            if (error.response) {
+                console.log(error.response.status);
+                console.log(error.response.data);
+            } else {
+                console.log(error.message);
+            }
+        }
     }
 
     renderResultRow(requirementId, tests) {
         return (
             <>
-                <div className="output-container2">
-                    <span className="output-text12">
+                <div className="output-col1">
+                    <span className="output-row-text">
                         <span>{"• " + requirementId}</span>
                         <br></br>
                     </span>
                 </div>
+                <div className="output-col2">
+                    <span className="output-row-text">
+                        <span>
+                            {this.getRequirementDescription(requirementId)}
+                        </span>
+                        <br></br>
+                    </span>
+                </div>
                 {tests.length > 0 ? (
-                    <div className="output-container3">
-                        <span className="output-text15">Yes</span>
+                    <div className="output-col3">
+                        <span className="output-row-text">Yes&nbsp;&nbsp;</span>
                         <svg viewBox="0 0 1024 1024" className="output-check">
                             <path d="M864 128l-480 480-224-224-160 160 384 384 640-640z"></path>
                         </svg>
                     </div>
                 ) : (
-                    <div className="output-container3">
-                        <span className="output-text15">No</span>
+                    <div className="output-col3">
+                        <span className="output-row-text">No&nbsp;&nbsp;</span>
                         <svg viewBox="0 0 1024 1024" className="output-cross">
                             <path d="M864 128l-480 480-224-224-160 160 384 384 640-640z"></path>
                         </svg>
                     </div>
                 )}
-                <div className="output-container4">
-                    <span className="output-text16">
+                <div className="output-col4">
+                    <span className="output-row-text">
                         {tests.length > 0 ? (
                             <>
-                                <span>{"• " + tests}</span>
+                                <span>
+                                    {this.getTestCasesWithDescription(tests)}
+                                </span>
                                 <br></br>
                             </>
                         ) : (
@@ -84,6 +204,28 @@ class Output extends Component {
                         )}
                     </span>
                 </div>
+                <div className="output-col5">
+                    {this.state.suggestionResponse.length > 0 ? (
+                        <span className="output-row-text">
+                            <span>
+                                {this.state.suggestionResponse[requirementId]}
+                            </span>
+                            <br></br>
+                        </span>
+                    ) : (
+                        <button
+                            className="example-yes-button"
+                            onClick={() => {
+                                this.sendTestSuggestionPrompt(requirementId);
+                            }}
+                        >
+                            <span className="example-yes-button-text">
+                                <span>Yes</span>
+                                <br></br>
+                            </span>
+                        </button>
+                    )}
+                </div>
             </>
         );
     }
@@ -92,18 +234,39 @@ class Output extends Component {
         return (
             <div className="output-container">
                 <div className="output-header">
-                    <span className="output-text03">
-                        <span>Requirement ID</span>
-                        <br></br>
-                    </span>
-                    <span className="output-text06">
-                        <span>Tested</span>
-                        <br></br>
-                    </span>
-                    <span className="output-text09">
-                        <span>Tested by </span>
-                        <br></br>
-                    </span>
+                    <div className="output-col1">
+                        <span className="output-header-text">
+                            <span>Req. ID</span>
+                            <br></br>
+                        </span>
+                    </div>
+                    <div className="output-col2">
+                        <span className="output-header-text">
+                            <span>Description</span>
+                            <br></br>
+                        </span>
+                    </div>
+                    <div className="output-col3">
+                        <span className="output-header-text">
+                            <span>Tested</span>
+                            <br></br>
+                        </span>
+                    </div>
+                    <div className="output-col4">
+                        <span className="output-header-text">
+                            <span>Tested by </span>
+                            <br></br>
+                        </span>
+                    </div>
+                    <div className="output-col5">
+                        <span className="output-header-text">
+                            <span>
+                                Do you want testing suggestions for the
+                                requirement?
+                            </span>
+                            <br></br>
+                        </span>
+                    </div>
                 </div>
                 <div className="output-content">{this.renderResultRows()}</div>
             </div>

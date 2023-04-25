@@ -14,11 +14,14 @@ class Home extends Component {
             testArray: "",
             resultArray: [],
             isLoading: false,
+            requirementObjects: [],
+            testObjects: [],
         };
         this.setRequirementsArray = this.setRequirementsArray.bind(this);
         this.setTestArray = this.setTestArray.bind(this);
         this.setResultArray = this.setResultArray.bind(this);
         this.setLoadingFlag = this.setLoadingFlag.bind(this);
+        this.setReqAndTestObjects = this.setReqAndTestObjects.bind(this);
     }
 
     componentDidMount() {
@@ -53,6 +56,15 @@ class Home extends Component {
         });
     }
 
+    setReqAndTestObjects(requirementObjects, testObjects) {
+        console.log(requirementObjects);
+        console.log(testObjects);
+        this.setState({
+            requirementObjects: requirementObjects,
+            testObjects: testObjects,
+        });
+    }
+
     promptBuilder() {}
 
     render() {
@@ -72,6 +84,10 @@ class Home extends Component {
                             <Output
                                 output={this.state.output}
                                 resultArray={this.state.resultArray}
+                                requirementObjects={
+                                    this.state.requirementObjects
+                                }
+                                testObjects={this.state.testObjects}
                             />
                         ) : (
                             <div className="home-analyzing">
@@ -141,6 +157,7 @@ class Home extends Component {
                             testArray={this.state.testArray}
                             setResultArray={this.setResultArray}
                             setLoadingFlag={this.setLoadingFlag}
+                            setReqAndTestObjects={this.setReqAndTestObjects}
                         />
                     </div>
                 </div>

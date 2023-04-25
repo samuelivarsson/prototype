@@ -27,6 +27,7 @@ class Send extends Component {
         this.findRequirementId = this.findRequirementId.bind(this);
         this.findRequirementTests = this.findRequirementTests.bind(this);
         this.renderLoading = this.renderLoading.bind(this);
+        this.setReqAndTestObjects = this.setReqAndTestObjects.bind(this);
     }
 
     // componentWillMount() {}
@@ -277,6 +278,12 @@ class Send extends Component {
         // or a database query; whatever it is, it MUST return a Promise.
 
         await this.sendFirstBatch();
+
+        this.setReqAndTestObjects(
+            this.state.requirementObjects,
+            this.state.testObjects
+        );
+
         await this.sendSecondBatch();
         console.log(this.state);
         console.log(this.state.requirementsWithTests);
@@ -288,6 +295,10 @@ class Send extends Component {
 
     renderLoading(bool) {
         this.props.setLoadingFlag(bool);
+    }
+
+    setReqAndTestObjects(requirementObjects, testObjects) {
+        this.props.setReqAndTestObjects(requirementObjects, testObjects);
     }
 
     render() {

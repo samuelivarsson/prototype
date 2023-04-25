@@ -29,3 +29,11 @@ export function requirementIsTestedPrompt(test_cases, requirement) {
         "\n\nBased on the description of the requirement, would you say that any of these test cases are testing the requirement? If yes, answer ONLY with the test case(s) that are testing the requirement in the following form:\n\n{“requirementID”: [insert requirement id], “tests”: “[insert test id 1], [insert test id 2], [insert test id 3], …”}\n\nDO NOT ADD ANY TEXT BEFORE OR AFTER THE CURLY BRACKETS. If no, answer ONLY in the following form:\n\n{“requirementID”: [insert requirement id], “tests”: “”}"
     );
 }
+
+export function testSuggestionPrompt(requirement) {
+    return (
+        "I have this requirement:\n\n" +
+        requirement +
+        "\n\nGive me a plan of how to test this requirement. Answer ONLY in the following form adn DO NOT add any text before or after the form:\n\n-Step1: [insert description for step 1]\n-Step2: [insert description for step 2]\n..."
+    );
+}
