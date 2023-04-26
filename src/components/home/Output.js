@@ -9,16 +9,17 @@ class Output extends Component {
         super(props);
         this.state = {
             suggestionResponse: {},
+            isLoading: {},
         };
         this.renderResultRows = this.renderResultRows.bind(this);
         this.renderResultRow = this.renderResultRow.bind(this);
         this.findTextInObject = this.findTextInObject.bind(this);
         this.getDescription = this.getDescription.bind(this);
-        this.getRequirementDescription = this.getTestDescription =
-            this.getTestDescription.bind(this);
+        this.getRequirementDescription =
+            this.getRequirementDescription.bind(this);
+        this.getTestDescription = this.getTestDescription.bind(this);
         this.getTestCasesWithDescription =
             this.getTestCasesWithDescription.bind(this);
-        this.getRequirementDescription.bind(this);
         this.sendTestSuggestionPrompt =
             this.sendTestSuggestionPrompt.bind(this);
     }
@@ -114,17 +115,37 @@ class Output extends Component {
         });
     }
 
-    renderTestedByList() {}
+    formatSuggestion(completion_text) {
+        console.log("\n\nCompletion text:\n\n");
+        console.log(completion_text);
+        const arr = completion_text.split("-Step ");
+        var res = "";
+        for (let i = 1; i < arr.length - 1; i++) {
+            const row = arr[i];
+            res += "Step " + row + "\n";
+        }
+        res += "Step " + arr[arr.length - 1];
+        console.log("\n\nRes:\n\n");
+        console.log(res);
+        return res;
+    }
 
     async sendTestSuggestionPrompt(requirementId) {
+        this.setState((prevState) => ({
+            isLoading: {
+                ...prevState.isLoading,
+                [requirementId]: true,
+            },
+        }));
+
         const configuration = new Configuration({
             organization: "org-Bc7ZnCV6EeMA8vHscXbIqeA5",
             apiKey: process.env.REACT_APP_OPENAI_API_KEY,
         });
         const openai = new OpenAIApi(configuration);
 
-        if (!this.props.requirementsArray) {
-            console.error("requirementsArray is null!");
+        if (!this.props.requirementObjects) {
+            console.error("requirementObjects is null!");
             return;
         }
 
@@ -142,9 +163,12 @@ class Output extends Component {
                 temperature: 0.7,
             });
             const completion_text = completion.data.choices[0].message.content;
-            this.setState({
-                suggestionResponse: { [requirementId]: completion_text },
-            });
+            this.setState((prevState) => ({
+                suggestionResponse: {
+                    ...prevState.suggestionResponse,
+                    [requirementId]: this.formatSuggestion(completion_text),
+                },
+            }));
         } catch (error) {
             if (error.response) {
                 console.log(error.response.status);
@@ -204,15 +228,27 @@ class Output extends Component {
                         )}
                     </span>
                 </div>
-                <div className="output-col5">
-                    {this.state.suggestionResponse.length > 0 ? (
+
+                {this.state.suggestionResponse[requirementId] != null ? (
+                    <div className="output-col5">
                         <span className="output-row-text">
                             <span>
                                 {this.state.suggestionResponse[requirementId]}
                             </span>
                             <br></br>
                         </span>
-                    ) : (
+                    </div>
+                ) : this.state.isLoading[requirementId] != null ? (
+                    <div className="output-col5-ring">
+                        <div className="output-ring">
+                            <div></div>
+                            <div></div>
+                            <div></div>
+                            <div></div>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="output-col5">
                         <button
                             className="example-yes-button"
                             onClick={() => {
@@ -224,8 +260,8 @@ class Output extends Component {
                                 <br></br>
                             </span>
                         </button>
-                    )}
-                </div>
+                    </div>
+                )}
             </>
         );
     }

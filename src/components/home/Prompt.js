@@ -34,6 +34,6 @@ export function testSuggestionPrompt(requirement) {
     return (
         "I have this requirement:\n\n" +
         requirement +
-        "\n\nGive me a plan of how to test this requirement. Answer ONLY in the following form adn DO NOT add any text before or after the form:\n\n-Step1: [insert description for step 1]\n-Step2: [insert description for step 2]\n..."
+        "\n\nGive me a plan of how to test this requirement. Answer ONLY in the following form adn DO NOT add any text before or after the form:\n\n-Step 1: [insert description for step 1]\n-Step2: [insert description for step 2]\n..."
     );
 }
