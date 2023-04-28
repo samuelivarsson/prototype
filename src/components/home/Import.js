@@ -62,6 +62,7 @@ class Import extends Component {
             "error",
             () => {
                 console.error("Could not read requirements file!");
+                this.props.setErrorLabel("Could not read requirements file!");
             }
         );
     }
@@ -90,7 +91,9 @@ class Import extends Component {
             },
             "error",
             () => {
-                console.error("Could not read test file!");
+                const errorLabel = "Could not read test file!";
+                console.error(errorLabel);
+                this.props.setErrorLabel(errorLabel);
             }
         );
     }

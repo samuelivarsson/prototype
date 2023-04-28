@@ -18,8 +18,11 @@ class Send extends Component {
             requirementsWithTests: [],
             awaitingResponse: false,
         };
+        this.batch_size = 5;
+        this.testCasesPerRequirement = 3;
         this.handleSendClick = this.handleSendClick.bind(this);
         this.sendBatch = this.sendBatch.bind(this);
+        this.calculateNumOfBatches = this.calculateNumOfBatches.bind(this);
         this.sendFirstBatch = this.sendFirstBatch.bind(this);
         this.sendSecondBatch = this.sendSecondBatch.bind(this);
         this.sendTestPrompt = this.sendTestPrompt.bind(this);
@@ -51,7 +54,9 @@ class Send extends Component {
         const openai = new OpenAIApi(configuration);
 
         if (!this.props.requirementsArray) {
-            console.error("requirementsArray is null!");
+            const errorLabel = "requirementsArray is null!";
+            console.error(errorLabel);
+            this.props.setErrorLabel(errorLabel);
             return;
         }
 
@@ -87,7 +92,9 @@ class Send extends Component {
         const openai = new OpenAIApi(configuration);
 
         if (!this.props.testArray) {
-            console.error("testArray is null!");
+            const errorLabel = "testArray is null!";
+            console.error(errorLabel);
+            this.props.setErrorLabel(errorLabel);
             return;
         }
 
@@ -113,7 +120,7 @@ class Send extends Component {
         }
     }
 
-    sendRequirementIsTestedPrompt(index) {
+    sendRequirementIsTestedPrompt(index, index2) {
         const configuration = new Configuration({
             organization: "org-Bc7ZnCV6EeMA8vHscXbIqeA5",
             apiKey: process.env.REACT_APP_OPENAI_API_KEY,
@@ -121,13 +128,18 @@ class Send extends Component {
         const openai = new OpenAIApi(configuration);
 
         if (!this.props.testArray) {
-            console.error("testArray is null!");
+            const errorLabel = "testArray is null!";
+            console.error(errorLabel);
+            this.props.setErrorLabel(errorLabel);
             return;
         }
 
         const messages = [];
         const user_input = requirementIsTestedPrompt(
-            this.state.testObjects,
+            this.state.testObjects.slice(
+                index2,
+                index2 + this.testCasesPerRequirement
+            ),
             this.state.requirementObjects[index]
         );
         messages.push({ role: "user", content: user_input });
@@ -141,9 +153,11 @@ class Send extends Component {
         } catch (error) {
             if (error.response) {
                 console.log(error.response.status);
+                this.props.setErrorLabel(error.response.status);
                 console.log(error.response.data);
             } else {
                 console.log(error.message);
+                this.props.setErrorLabel(error.message);
             }
         }
     }
@@ -155,40 +169,87 @@ class Send extends Component {
             return await Promise.all(batch.map((f) => f()));
         } catch (err) {
             console.error(err);
+            this.props.setErrorLabel(err);
         }
     }
 
+    calculateNumOfBatches() {
+        const numRequirements = this.props.requirementsArray.length - 1;
+        const numTestCases = this.props.testArray.length - 1;
+        const numTestCaseBatches =
+            numTestCases % this.testCasesPerRequirement == 0
+                ? numTestCases / this.testCasesPerRequirement
+                : Math.floor(numTestCases / this.testCasesPerRequirement) + 1;
+        const numReqIsTestedPrompts = numRequirements * numTestCaseBatches;
+        return numRequirements + numTestCases + numReqIsTestedPrompts;
+    }
+
+    increaseProgress(batch_size) {
+        this.props.increaseAnalysisProgress(
+            (batch_size / this.calculateNumOfBatches()) * 100
+        );
+    }
+
     async sendFirstBatch() {
-        const batch = [];
+        const batches = [];
+        var batch = [];
+
+        var a = 0;
         for (let i = 1; i < this.props.requirementsArray.length; i++) {
+            if (a == this.batch_size) {
+                batches.push(batch);
+                batch = [];
+                a = 0;
+            }
             batch.push(() => {
                 return this.sendRequirementPrompt(i);
             });
+            a++;
         }
+        batches.push(batch);
+        batch = [];
+
+        a = 0;
         for (let i = 1; i < this.props.testArray.length; i++) {
+            if (a == this.batch_size) {
+                batches.push(batch);
+                batch = [];
+                a = 0;
+            }
             batch.push(() => {
                 return this.sendTestPrompt(i);
             });
+            a++;
         }
-        const completions = await this.sendBatch(batch);
-        if (completions == null) {
-            console.error("No completions were fetched!");
-            return;
-        }
-        for (let i = 0; i < completions.length; i++) {
-            const completion_text =
-                completions[i].data.choices[0].message.content;
-            if (completion_text.includes('"ID": "')) {
-                this.setState((prevState) => ({
-                    testObjects: [...prevState.testObjects, completion_text],
-                }));
-            } else {
-                this.setState((prevState) => ({
-                    requirementObjects: [
-                        ...prevState.requirementObjects,
-                        completion_text,
-                    ],
-                }));
+        batches.push(batch);
+
+        for (const curr_batch of batches) {
+            const completions = await this.sendBatch(curr_batch);
+            this.increaseProgress(curr_batch.length);
+            if (completions == null) {
+                const errorLabel = "No completions were fetched!";
+                console.error(errorLabel);
+                this.props.setErrorLabel(errorLabel);
+                return;
+            }
+            for (let i = 0; i < completions.length; i++) {
+                const completion_text =
+                    completions[i].data.choices[0].message.content;
+                if (completion_text.includes('"ID": "')) {
+                    this.setState((prevState) => ({
+                        testObjects: [
+                            ...prevState.testObjects,
+                            completion_text,
+                        ],
+                    }));
+                } else {
+                    this.setState((prevState) => ({
+                        requirementObjects: [
+                            ...prevState.requirementObjects,
+                            completion_text,
+                        ],
+                    }));
+                }
             }
         }
     }
@@ -200,14 +261,18 @@ class Send extends Component {
         if (firstSplit == null) {
             console.log(completion_text);
             console.log(text_to_find);
-            console.error("Could not create first split!");
+            const errorLabel = "Could not create first split!";
+            console.error(errorLabel);
+            this.props.setErrorLabel(errorLabel);
             return;
         }
         const secondSplit = firstSplit.split('"')[0];
         if (secondSplit == null) {
             console.log(completion_text);
             console.log(text_to_find);
-            console.error("Could not create second split!");
+            const errorLabel = "Could not create second split!";
+            console.error(errorLabel);
+            this.props.setErrorLabel(errorLabel);
             return;
         }
         return secondSplit;
@@ -222,27 +287,55 @@ class Send extends Component {
     }
 
     async sendSecondBatch() {
-        const batch = [];
+        const batches = [];
+        var batch = [];
+
+        var a = 0;
         for (let i = 0; i < this.state.requirementObjects.length; i++) {
-            batch.push(() => {
-                return this.sendRequirementIsTestedPrompt(i);
-            });
+            if (a == this.batch_size) {
+                batches.push(batch);
+                batch = [];
+                a = 0;
+            }
+
+            for (
+                let j = 0;
+                j < this.state.testObjects.length;
+                j += this.testCasesPerRequirement
+            ) {
+                if (a == this.batch_size) {
+                    batches.push(batch);
+                    batch = [];
+                    a = 0;
+                }
+                batch.push(() => {
+                    return this.sendRequirementIsTestedPrompt(i, j);
+                });
+                a++;
+            }
         }
-        const completions = await this.sendBatch(batch);
-        for (let i = 0; i < completions.length; i++) {
-            const completion_text =
-                completions[i].data.choices[0].message.content;
-            const requirementID = this.findRequirementId(completion_text);
-            const requirementTests = this.findRequirementTests(completion_text);
-            this.setState((prevState) => ({
-                requirementsWithTests: [
-                    ...prevState.requirementsWithTests,
-                    {
-                        ID: requirementID,
-                        tests: requirementTests,
-                    },
-                ],
-            }));
+        batches.push(batch);
+        console.log(batches);
+
+        for (const curr_batch of batches) {
+            const completions = await this.sendBatch(curr_batch);
+            this.increaseProgress(curr_batch.length);
+            for (let i = 0; i < completions.length; i++) {
+                const completion_text =
+                    completions[i].data.choices[0].message.content;
+                const requirementID = this.findRequirementId(completion_text);
+                const requirementTests =
+                    this.findRequirementTests(completion_text);
+                this.setState((prevState) => ({
+                    requirementsWithTests: [
+                        ...prevState.requirementsWithTests,
+                        {
+                            ID: requirementID,
+                            tests: requirementTests,
+                        },
+                    ],
+                }));
+            }
         }
     }
 
@@ -252,11 +345,15 @@ class Send extends Component {
             return;
         }
         if (!this.props.requirementsArray) {
-            console.error("Requirements array is null!");
+            const errorLabel = "requirementsArray is null!";
+            console.error(errorLabel);
+            this.props.setErrorLabel(errorLabel);
             return;
         }
         if (!this.props.testArray) {
-            console.error("Test array is null!");
+            const errorLabel = "testArray is null!";
+            console.error(errorLabel);
+            this.props.setErrorLabel(errorLabel);
             return;
         }
 
@@ -269,6 +366,7 @@ class Send extends Component {
             return;
         }
 
+        this.props.resetAnalysisProgress();
         this.renderLoading(true);
         this.props.setResultArray([]);
         this.setState({

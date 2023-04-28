@@ -43,14 +43,18 @@ class Output extends Component {
         if (firstSplit == null) {
             console.log(object);
             console.log(text_to_find);
-            console.error("Could not create first split!");
+            const errorLabel = "Could not create first split!";
+            console.error(errorLabel);
+            this.props.setErrorLabel(errorLabel);
             return;
         }
         const secondSplit = firstSplit.split('"')[0];
         if (secondSplit == null) {
             console.log(object);
             console.log(text_to_find);
-            console.error("Could not create second split!");
+            const errorLabel = "Could not create second split!";
+            console.error(errorLabel);
+            this.props.setErrorLabel(errorLabel);
             return;
         }
         return secondSplit;
@@ -58,7 +62,9 @@ class Output extends Component {
 
     getDescription(objects, objectId, type) {
         if (objects == null) {
-            console.error("objects is null!");
+            const errorLabel = "objects is null!";
+            console.error(errorLabel);
+            this.props.setErrorLabel(errorLabel);
             return;
         }
         for (let i = 0; i < objects.length; i++) {
@@ -100,12 +106,31 @@ class Output extends Component {
         return result;
     }
 
+    mergeObjectsWithSameId(arr) {
+        arr.forEach((obj1) => {
+            console.log(obj1);
+            const duplicateObjs = arr.filter(
+                (obj2) => obj1.ID === obj2.ID && obj1 !== obj2
+            );
+            console.log(duplicateObjs);
+            if (duplicateObjs.length > 0) {
+                duplicateObjs.forEach((duplicateObj) => {
+                    if (duplicateObj.tests.length > 0) {
+                        obj1.tests += `, ${duplicateObj.tests}`;
+                    }
+                    arr = arr.filter((obj) => obj !== duplicateObj);
+                });
+            }
+        });
+        return arr;
+    }
+
     renderResultRows() {
         if (!this.props) {
             console.log("Props is null in Output.js!");
             return;
         }
-        const resultArray = this.props.resultArray;
+        const resultArray = this.mergeObjectsWithSameId(this.props.resultArray);
         return resultArray.map((result) => {
             return (
                 <div key={result.ID} className="output-row">
@@ -116,8 +141,6 @@ class Output extends Component {
     }
 
     formatSuggestion(completion_text) {
-        console.log("\n\nCompletion text:\n\n");
-        console.log(completion_text);
         const arr = completion_text.split("-Step ");
         var res = "";
         for (let i = 1; i < arr.length - 1; i++) {
@@ -125,8 +148,6 @@ class Output extends Component {
             res += "Step " + row + "\n";
         }
         res += "Step " + arr[arr.length - 1];
-        console.log("\n\nRes:\n\n");
-        console.log(res);
         return res;
     }
 
@@ -145,7 +166,9 @@ class Output extends Component {
         const openai = new OpenAIApi(configuration);
 
         if (!this.props.requirementObjects) {
-            console.error("requirementObjects is null!");
+            const errorLabel = "requirementObjects is null!";
+            console.error(errorLabel);
+            this.props.setErrorLabel(errorLabel);
             return;
         }
 

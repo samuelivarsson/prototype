@@ -1,4 +1,6 @@
 import React, { Component } from "react";
+import "bootstrap/dist/css/bootstrap.min.css";
+import ProgressBar from "react-bootstrap/ProgressBar";
 import Import from "./Import";
 import Send from "./Send";
 import Output from "./Output";
@@ -16,7 +18,13 @@ class Home extends Component {
             isLoading: false,
             requirementObjects: [],
             testObjects: [],
+            errorLabel: "",
+            analysisProgress: 0,
         };
+        this.setErrorLabel = this.setErrorLabel.bind(this);
+        this.resetAnalysisProgress = this.resetAnalysisProgress.bind(this);
+        this.increaseAnalysisProgress =
+            this.increaseAnalysisProgress.bind(this);
         this.setRequirementsArray = this.setRequirementsArray.bind(this);
         this.setTestArray = this.setTestArray.bind(this);
         this.setResultArray = this.setResultArray.bind(this);
@@ -27,6 +35,24 @@ class Home extends Component {
     componentDidMount() {
         this.setState((state, props) => {
             return { output: "Hejsan" };
+        });
+    }
+
+    resetAnalysisProgress() {
+        this.setState({
+            analysisProgress: 0,
+        });
+    }
+
+    increaseAnalysisProgress(number) {
+        this.setState((prevState) => ({
+            analysisProgress: prevState.analysisProgress + number,
+        }));
+    }
+
+    setErrorLabel(label) {
+        this.setState({
+            errorLabel: label,
         });
     }
 
@@ -50,7 +76,6 @@ class Home extends Component {
     }
 
     setLoadingFlag(bool) {
-        console.log(bool);
         this.setState({
             isLoading: bool,
         });
@@ -70,6 +95,22 @@ class Home extends Component {
     render() {
         return (
             <div className="home-container">
+                {this.state.errorLabel.length > 0 && (
+                    <div className="home-top-container">
+                        <div className="home-error-container">
+                            <span className="home-error-label">
+                                <span>{this.state.errorLabel}</span>
+                                <br></br>
+                            </span>
+                            <button
+                                className="home-close-error button"
+                                onClick={() => this.setErrorLabel("")}
+                            >
+                                X
+                            </button>
+                        </div>
+                    </div>
+                )}
                 <div className="home-side-bar">
                     <button className="home-button button">
                         <span className="home-text">
@@ -88,18 +129,17 @@ class Home extends Component {
                                     this.state.requirementObjects
                                 }
                                 testObjects={this.state.testObjects}
+                                setErrorLabel={this.setErrorLabel}
                             />
                         ) : (
                             <div className="home-analyzing">
-                                <div className="lds-ring">
-                                    <div></div>
-                                    <div></div>
-                                    <div></div>
-                                    <div></div>
-                                </div>
-                                <span className="home-text40">
-                                    Analyzing...
-                                </span>
+                                <span className="home-text40">Analyzing</span>
+                                <ProgressBar
+                                    className="home-progress-bar"
+                                    animated
+                                    variant="custom"
+                                    now={this.state.analysisProgress}
+                                />
                             </div>
                         )
                     ) : (
@@ -149,6 +189,7 @@ class Home extends Component {
                         <Import
                             setTestArray={this.setTestArray}
                             setRequirementsArray={this.setRequirementsArray}
+                            setErrorLabel={this.setErrorLabel}
                         />
 
                         <Send
@@ -158,6 +199,11 @@ class Home extends Component {
                             setResultArray={this.setResultArray}
                             setLoadingFlag={this.setLoadingFlag}
                             setReqAndTestObjects={this.setReqAndTestObjects}
+                            setErrorLabel={this.setErrorLabel}
+                            resetAnalysisProgress={this.resetAnalysisProgress}
+                            increaseAnalysisProgress={
+                                this.increaseAnalysisProgress
+                            }
                         />
                     </div>
                 </div>
