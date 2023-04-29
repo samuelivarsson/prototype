@@ -6,7 +6,7 @@
     "editor.formatOnSave": true,
     "prettier.endOfLine": "lf",
     "prettier.enable": true,
-    "prettier.printWidth": 80,
+    "prettier.printWidth": 100,
     "prettier.semi": true,
     "prettier.trailingComma": "es5",
     "prettier.useTabs": false,
@@ -30,5 +30,8 @@
         "editor.defaultFormatter": "esbenp.prettier-vscode"
     },
     "prettier.tabWidth": 4,
-    "files.insertFinalNewline": true
+    "files.insertFinalNewline": true,
+    "editor.rulers": [
+        100
+    ]
 }

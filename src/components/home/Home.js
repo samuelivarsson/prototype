@@ -14,22 +14,25 @@ class Home extends Component {
             output: "error",
             requirementsArray: "",
             testArray: "",
-            resultArray: [],
+            requirementsWithTests: [],
+            isFinished: false,
             isLoading: false,
-            requirementObjects: [],
-            testObjects: [],
             errorLabel: "",
             analysisProgress: 0,
         };
+        this.requirementObjects = [];
+        this.testObjects = [];
         this.setErrorLabel = this.setErrorLabel.bind(this);
         this.resetAnalysisProgress = this.resetAnalysisProgress.bind(this);
-        this.increaseAnalysisProgress =
-            this.increaseAnalysisProgress.bind(this);
+        this.increaseAnalysisProgress = this.increaseAnalysisProgress.bind(this);
         this.setRequirementsArray = this.setRequirementsArray.bind(this);
         this.setTestArray = this.setTestArray.bind(this);
-        this.setResultArray = this.setResultArray.bind(this);
+        this.addRequirementWithTests = this.addRequirementWithTests.bind(this);
+        this.setRequirementsWithTests = this.setRequirementsWithTests.bind(this);
+        this.setIsFinished = this.setIsFinished.bind(this);
         this.setLoadingFlag = this.setLoadingFlag.bind(this);
-        this.setReqAndTestObjects = this.setReqAndTestObjects.bind(this);
+        this.addRequirementObject = this.addRequirementObject.bind(this);
+        this.addTestObject = this.addTestObject.bind(this);
     }
 
     componentDidMount() {
@@ -68,10 +71,21 @@ class Home extends Component {
         });
     }
 
-    setResultArray(resultArray) {
-        console.log(resultArray);
+    addRequirementWithTests(obj) {
+        this.setState((prevState) => ({
+            requirementsWithTests: [...prevState.requirementsWithTests, obj],
+        }));
+    }
+
+    setRequirementsWithTests(arr) {
         this.setState({
-            resultArray: resultArray,
+            requirementsWithTests: arr,
+        });
+    }
+
+    setIsFinished(val) {
+        this.setState({
+            isFinished: val,
         });
     }
 
@@ -81,16 +95,13 @@ class Home extends Component {
         });
     }
 
-    setReqAndTestObjects(requirementObjects, testObjects) {
-        console.log(requirementObjects);
-        console.log(testObjects);
-        this.setState({
-            requirementObjects: requirementObjects,
-            testObjects: testObjects,
-        });
+    addRequirementObject(obj) {
+        this.requirementObjects.push(obj);
     }
 
-    promptBuilder() {}
+    addTestObject(obj) {
+        this.testObjects.push(obj);
+    }
 
     render() {
         return (
@@ -121,14 +132,12 @@ class Home extends Component {
                 </div>
                 <div className="home-container1">
                     {this.state.isLoading ? (
-                        this.state.resultArray.length != 0 ? (
+                        this.state.requirementsWithTests.length != 0 && this.state.isFinished ? (
                             <Output
                                 output={this.state.output}
-                                resultArray={this.state.resultArray}
-                                requirementObjects={
-                                    this.state.requirementObjects
-                                }
-                                testObjects={this.state.testObjects}
+                                requirementsWithTests={this.state.requirementsWithTests}
+                                requirementObjects={this.requirementObjects}
+                                testObjects={this.testObjects}
                                 setErrorLabel={this.setErrorLabel}
                             />
                         ) : (
@@ -151,14 +160,13 @@ class Home extends Component {
                                 </span>
                                 <span className="home-text22">
                                     <span>
-                                        • Choose to import requirement file
-                                        (.csv format) for the test suite.
+                                        • Choose to import requirement file (.csv format) for the
+                                        test suite.
                                     </span>
                                     <br></br>
                                     <span>
-                                        • Choose to import test file (.csv
-                                        format) containing test cases for
-                                        analysis.
+                                        • Choose to import test file (.csv format) containing test
+                                        cases for analysis.
                                     </span>
                                     <br></br>
                                     <span>• Run analysis.</span>
@@ -173,10 +181,7 @@ class Home extends Component {
                                     <br></br>
                                 </span>
                                 <span className="home-text34">
-                                    <span>
-                                        • May occasionally generate incorrect
-                                        information
-                                    </span>
+                                    <span>• May occasionally generate incorrect information</span>
                                     <br></br>
                                     <span>• Limited to .csv files</span>
                                     <br></br>
@@ -196,14 +201,17 @@ class Home extends Component {
                             prompt={this.state.prompt}
                             requirementsArray={this.state.requirementsArray}
                             testArray={this.state.testArray}
-                            setResultArray={this.setResultArray}
+                            addRequirementWithTests={this.addRequirementWithTests}
+                            setRequirementsWithTests={this.setRequirementsWithTests}
+                            setIsFinished={this.setIsFinished}
                             setLoadingFlag={this.setLoadingFlag}
-                            setReqAndTestObjects={this.setReqAndTestObjects}
+                            requirementObjects={this.requirementObjects}
+                            addRequirementObject={this.addRequirementObject}
+                            testObjects={this.testObjects}
+                            addTestObject={this.addTestObject}
                             setErrorLabel={this.setErrorLabel}
                             resetAnalysisProgress={this.resetAnalysisProgress}
-                            increaseAnalysisProgress={
-                                this.increaseAnalysisProgress
-                            }
+                            increaseAnalysisProgress={this.increaseAnalysisProgress}
                         />
                     </div>
                 </div>

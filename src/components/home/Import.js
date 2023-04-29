@@ -49,9 +49,7 @@ class Import extends Component {
         requirementsReader.addEventListener(
             "load",
             () => {
-                let rows = CSVConcat(
-                    CSVToArray(requirementsReader.result, ",")
-                );
+                let rows = CSVConcat(CSVToArray(requirementsReader.result, ","));
 
                 this.props.setRequirementsArray(rows);
 
@@ -102,10 +100,7 @@ class Import extends Component {
         //console.log(this.state);
         return (
             <>
-                <button
-                    className="home-button1 button"
-                    onClick={this.openRequirementsFile}
-                >
+                <button className="home-button1 button" onClick={this.openRequirementsFile}>
                     <span className="home-text04">
                         <span>
                             {this.state.chosenRequirementFile
@@ -123,10 +118,7 @@ class Import extends Component {
                     onChange={this.handleRequirementImport}
                     accept=".csv"
                 />
-                <button
-                    className="home-button2 button"
-                    onClick={this.openTestFile}
-                >
+                <button className="home-button2 button" onClick={this.openTestFile}>
                     <span className="home-text07">
                         <span>
                             {this.state.chosenTestFile

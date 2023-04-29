@@ -3,6 +3,7 @@ import PropTypes from "prop-types";
 import "./Output.css";
 import { testSuggestionPrompt } from "./Prompt";
 import { Configuration, OpenAIApi } from "openai";
+import { mergeObjectsWithSameId } from "./ResponseParser";
 
 class Output extends Component {
     constructor(props) {
@@ -13,116 +14,44 @@ class Output extends Component {
         };
         this.renderResultRows = this.renderResultRows.bind(this);
         this.renderResultRow = this.renderResultRow.bind(this);
-        this.findTextInObject = this.findTextInObject.bind(this);
-        this.getDescription = this.getDescription.bind(this);
-        this.getRequirementDescription =
-            this.getRequirementDescription.bind(this);
+        this.getRequirementDescription = this.getRequirementDescription.bind(this);
         this.getTestDescription = this.getTestDescription.bind(this);
-        this.getTestCasesWithDescription =
-            this.getTestCasesWithDescription.bind(this);
-        this.sendTestSuggestionPrompt =
-            this.sendTestSuggestionPrompt.bind(this);
+        this.getTestCasesWithDescription = this.getTestCasesWithDescription.bind(this);
+        this.sendTestSuggestionPrompt = this.sendTestSuggestionPrompt.bind(this);
     }
 
-    // componentWillMount() {}
-
-    componentDidMount() {}
-
-    // componentWillReceiveProps(nextProps) {}
-
-    // shouldComponentUpdate(nextProps, nextState) {}
-
-    // componentWillUpdate(nextProps, nextState) {}
-
-    // componentDidUpdate(prevProps, prevState) {}
-
-    // componentWillUnmount() {}
-
-    findTextInObject(object, text_to_find) {
-        const firstSplit = object.split('"' + text_to_find + '": "')[1];
-        if (firstSplit == null) {
-            console.log(object);
-            console.log(text_to_find);
-            const errorLabel = "Could not create first split!";
-            console.error(errorLabel);
-            this.props.setErrorLabel(errorLabel);
-            return;
-        }
-        const secondSplit = firstSplit.split('"')[0];
-        if (secondSplit == null) {
-            console.log(object);
-            console.log(text_to_find);
-            const errorLabel = "Could not create second split!";
-            console.error(errorLabel);
-            this.props.setErrorLabel(errorLabel);
-            return;
-        }
-        return secondSplit;
-    }
-
-    getDescription(objects, objectId, type) {
-        if (objects == null) {
-            const errorLabel = "objects is null!";
-            console.error(errorLabel);
-            this.props.setErrorLabel(errorLabel);
-            return;
-        }
-        for (let i = 0; i < objects.length; i++) {
-            const object = objects[i];
-            if (object.includes(objectId)) {
-                const text_to_find = type == "TEST" ? "desc" : objectId;
-                return this.findTextInObject(object, text_to_find);
+    getRequirementDescription(requirementId) {
+        const requirementObjects = this.props.requirementObjects;
+        for (const requirementObject of requirementObjects) {
+            if (requirementObject.requirementID == requirementId) {
+                return requirementObject.desc;
             }
         }
         return "";
     }
 
-    getRequirementDescription(requirementId) {
-        const requirementObjects = this.props.requirementObjects;
-        const type = "REQUIREMENT";
-        return this.getDescription(requirementObjects, requirementId, type);
-    }
-
     getTestDescription(testId) {
         const testObjects = this.props.testObjects;
-        const type = "TEST";
-        return this.getDescription(testObjects, testId, type);
+        for (const testObject of testObjects) {
+            if (testObject.ID == testId) {
+                return testObject.desc;
+            }
+        }
+        return "";
     }
 
     getTestCasesWithDescription(testsString) {
         const testsArray = testsString.split(", ");
         var result = "";
-        for (let i = 0; i < testsArray.length - 1; i++) {
+
+        for (let i = 0; i < testsArray.length; i++) {
+            const newLine = i == testsArray.length - 1 ? "" : "\n\n";
             const testId = testsArray[i];
             const description = this.getTestDescription(testId);
-            result += testId + " - " + description + "\n\n";
+            result += testId + " - " + description + newLine;
         }
 
-        // Add last element without new lines
-        const testId = testsArray[testsArray.length - 1];
-        const description = this.getTestDescription(testId);
-        result += testId + " - " + description;
-
         return result;
-    }
-
-    mergeObjectsWithSameId(arr) {
-        arr.forEach((obj1) => {
-            console.log(obj1);
-            const duplicateObjs = arr.filter(
-                (obj2) => obj1.ID === obj2.ID && obj1 !== obj2
-            );
-            console.log(duplicateObjs);
-            if (duplicateObjs.length > 0) {
-                duplicateObjs.forEach((duplicateObj) => {
-                    if (duplicateObj.tests.length > 0) {
-                        obj1.tests += `, ${duplicateObj.tests}`;
-                    }
-                    arr = arr.filter((obj) => obj !== duplicateObj);
-                });
-            }
-        });
-        return arr;
     }
 
     renderResultRows() {
@@ -130,11 +59,14 @@ class Output extends Component {
             console.log("Props is null in Output.js!");
             return;
         }
-        const resultArray = this.mergeObjectsWithSameId(this.props.resultArray);
-        return resultArray.map((result) => {
+
+        console.log(this.props.requirementsWithTests);
+        var mergedArr = mergeObjectsWithSameId([...this.props.requirementsWithTests]);
+        console.log(mergedArr);
+        return mergedArr.map((result) => {
             return (
-                <div key={result.ID} className="output-row">
-                    {this.renderResultRow(result.ID, result.tests)}
+                <div key={result.requirementID} className="output-row">
+                    {this.renderResultRow(result.requirementID, result.tests)}
                 </div>
             );
         });
@@ -174,9 +106,7 @@ class Output extends Component {
 
         const messages = [];
 
-        const user_input = testSuggestionPrompt(
-            this.getRequirementDescription(requirementId)
-        );
+        const user_input = testSuggestionPrompt(this.getRequirementDescription(requirementId));
         messages.push({ role: "user", content: user_input });
 
         try {
@@ -213,9 +143,7 @@ class Output extends Component {
                 </div>
                 <div className="output-col2">
                     <span className="output-row-text">
-                        <span>
-                            {this.getRequirementDescription(requirementId)}
-                        </span>
+                        <span>{this.getRequirementDescription(requirementId)}</span>
                         <br></br>
                     </span>
                 </div>
@@ -238,9 +166,7 @@ class Output extends Component {
                     <span className="output-row-text">
                         {tests.length > 0 ? (
                             <>
-                                <span>
-                                    {this.getTestCasesWithDescription(tests)}
-                                </span>
+                                <span>{this.getTestCasesWithDescription(tests)}</span>
                                 <br></br>
                             </>
                         ) : (
@@ -255,9 +181,7 @@ class Output extends Component {
                 {this.state.suggestionResponse[requirementId] != null ? (
                     <div className="output-col5">
                         <span className="output-row-text">
-                            <span>
-                                {this.state.suggestionResponse[requirementId]}
-                            </span>
+                            <span>{this.state.suggestionResponse[requirementId]}</span>
                             <br></br>
                         </span>
                     </div>
@@ -319,10 +243,7 @@ class Output extends Component {
                     </div>
                     <div className="output-col5">
                         <span className="output-header-text">
-                            <span>
-                                Do you want testing suggestions for the
-                                requirement?
-                            </span>
+                            <span>Do you want testing suggestions for the requirement?</span>
                             <br></br>
                         </span>
                     </div>

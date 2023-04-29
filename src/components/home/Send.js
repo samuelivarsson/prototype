@@ -2,11 +2,8 @@ import React, { Component } from "react";
 import PropTypes from "prop-types";
 import { Configuration, OpenAIApi } from "openai";
 import "./Home.css";
-import {
-    testPrompt,
-    requirementPrompt,
-    requirementIsTestedPrompt,
-} from "./Prompt";
+import { testPrompt, requirementPrompt, requirementIsTestedPrompt } from "./Prompt";
+import { parseStringToObject } from "./ResponseParser";
 // import readlineSync from "readline-sync";
 
 class Send extends Component {
@@ -23,17 +20,16 @@ class Send extends Component {
         this.handleSendClick = this.handleSendClick.bind(this);
         this.sendBatch = this.sendBatch.bind(this);
         this.calculateNumOfBatches = this.calculateNumOfBatches.bind(this);
-        this.sendFirstBatch = this.sendFirstBatch.bind(this);
-        this.sendSecondBatch = this.sendSecondBatch.bind(this);
+        this.createFirstBatches = this.createFirstBatches.bind(this);
+        this.sendFirstBatches = this.sendFirstBatches.bind(this);
+        this.createSecondBatches = this.createSecondBatches.bind(this);
+        this.sendSecondBatches = this.sendSecondBatches.bind(this);
         this.sendTestPrompt = this.sendTestPrompt.bind(this);
         this.sendRequirementPrompt = this.sendRequirementPrompt.bind(this);
-        this.findRequirementId = this.findRequirementId.bind(this);
-        this.findRequirementTests = this.findRequirementTests.bind(this);
         this.renderLoading = this.renderLoading.bind(this);
-        this.setReqAndTestObjects = this.setReqAndTestObjects.bind(this);
+        this.setRequirementObjects = this.setRequirementObjects.bind(this);
+        this.setTestObjects = this.setTestObjects.bind(this);
     }
-
-    // componentWillMount() {}
 
     componentDidMount() {
         if (!this.props) {
@@ -62,9 +58,7 @@ class Send extends Component {
 
         const messages = [];
         const user_input = requirementPrompt(
-            this.props.requirementsArray[0] +
-                "\n" +
-                this.props.requirementsArray[index]
+            this.props.requirementsArray[0] + "\n" + this.props.requirementsArray[index]
         );
         messages.push({ role: "user", content: user_input });
 
@@ -99,9 +93,7 @@ class Send extends Component {
         }
 
         const messages = [];
-        const user_input = testPrompt(
-            this.props.testArray[0] + "\n" + this.props.testArray[index]
-        );
+        const user_input = testPrompt(this.props.testArray[0] + "\n" + this.props.testArray[index]);
         messages.push({ role: "user", content: user_input });
 
         try {
@@ -136,13 +128,11 @@ class Send extends Component {
 
         const messages = [];
         const user_input = requirementIsTestedPrompt(
-            this.state.testObjects.slice(
-                index2,
-                index2 + this.testCasesPerRequirement
-            ),
-            this.state.requirementObjects[index]
+            this.props.testObjects.slice(index2, index2 + this.testCasesPerRequirement),
+            JSON.stringify(this.props.requirementObjects[index])
         );
         messages.push({ role: "user", content: user_input });
+        console.log(user_input);
 
         try {
             return openai.createChatCompletion({
@@ -185,156 +175,126 @@ class Send extends Component {
     }
 
     increaseProgress(batch_size) {
-        this.props.increaseAnalysisProgress(
-            (batch_size / this.calculateNumOfBatches()) * 100
-        );
+        this.props.increaseAnalysisProgress((batch_size / this.calculateNumOfBatches()) * 100);
     }
 
-    async sendFirstBatch() {
-        const batches = [];
+    createFirstBatches() {
+        var batches = [];
         var batch = [];
 
-        var a = 0;
         for (let i = 1; i < this.props.requirementsArray.length; i++) {
-            if (a == this.batch_size) {
-                batches.push(batch);
-                batch = [];
-                a = 0;
-            }
             batch.push(() => {
                 return this.sendRequirementPrompt(i);
             });
-            a++;
         }
-        batches.push(batch);
-        batch = [];
 
-        a = 0;
         for (let i = 1; i < this.props.testArray.length; i++) {
-            if (a == this.batch_size) {
-                batches.push(batch);
-                batch = [];
-                a = 0;
-            }
             batch.push(() => {
                 return this.sendTestPrompt(i);
             });
-            a++;
         }
-        batches.push(batch);
+
+        for (let i = 0; i < batch.length; i += this.batch_size) {
+            const smaller_batch = batch.slice(i, i + this.batch_size);
+            batches.push(smaller_batch);
+        }
+
+        return batches;
+    }
+
+    async sendFirstBatches() {
+        const batches = this.createFirstBatches();
+
+        if (batches.length < 1) {
+            console.log("batches was empty!");
+            return;
+        }
 
         for (const curr_batch of batches) {
+            if (curr_batch.length < 1) {
+                console.log("curr_batch was empty!");
+                continue;
+            }
+
             const completions = await this.sendBatch(curr_batch);
+
             this.increaseProgress(curr_batch.length);
+
             if (completions == null) {
                 const errorLabel = "No completions were fetched!";
                 console.error(errorLabel);
                 this.props.setErrorLabel(errorLabel);
                 return;
             }
+
             for (let i = 0; i < completions.length; i++) {
-                const completion_text =
-                    completions[i].data.choices[0].message.content;
-                if (completion_text.includes('"ID": "')) {
-                    this.setState((prevState) => ({
-                        testObjects: [
-                            ...prevState.testObjects,
-                            completion_text,
-                        ],
-                    }));
-                } else {
-                    this.setState((prevState) => ({
-                        requirementObjects: [
-                            ...prevState.requirementObjects,
-                            completion_text,
-                        ],
-                    }));
+                const completion_text = completions[i].data.choices[0].message.content;
+                console.log(completion_text);
+
+                try {
+                    const obj = parseStringToObject(completion_text);
+                    if (obj.ID != null) {
+                        this.props.addTestObject(obj);
+                    } else {
+                        this.props.addRequirementObject(obj);
+                    }
+                } catch (err) {
+                    console.error(err);
+                    this.props.setErrorLabel(err);
                 }
             }
         }
     }
 
-    findTextInCompletion(completion_text, text_to_find) {
-        const firstSplit = completion_text.split(
-            '"' + text_to_find + '": "'
-        )[1];
-        if (firstSplit == null) {
-            console.log(completion_text);
-            console.log(text_to_find);
-            const errorLabel = "Could not create first split!";
-            console.error(errorLabel);
-            this.props.setErrorLabel(errorLabel);
-            return;
-        }
-        const secondSplit = firstSplit.split('"')[0];
-        if (secondSplit == null) {
-            console.log(completion_text);
-            console.log(text_to_find);
-            const errorLabel = "Could not create second split!";
-            console.error(errorLabel);
-            this.props.setErrorLabel(errorLabel);
-            return;
-        }
-        return secondSplit;
-    }
-
-    findRequirementId(completion_text) {
-        return this.findTextInCompletion(completion_text, "requirementID");
-    }
-
-    findRequirementTests(completion_text) {
-        return this.findTextInCompletion(completion_text, "tests");
-    }
-
-    async sendSecondBatch() {
-        const batches = [];
+    createSecondBatches() {
+        var batches = [];
         var batch = [];
 
-        var a = 0;
-        for (let i = 0; i < this.state.requirementObjects.length; i++) {
-            if (a == this.batch_size) {
-                batches.push(batch);
-                batch = [];
-                a = 0;
-            }
-
-            for (
-                let j = 0;
-                j < this.state.testObjects.length;
-                j += this.testCasesPerRequirement
-            ) {
-                if (a == this.batch_size) {
-                    batches.push(batch);
-                    batch = [];
-                    a = 0;
-                }
+        for (let i = 0; i < this.props.requirementObjects.length; i++) {
+            for (let j = 0; j < this.props.testObjects.length; j += this.testCasesPerRequirement) {
                 batch.push(() => {
                     return this.sendRequirementIsTestedPrompt(i, j);
                 });
-                a++;
             }
         }
-        batches.push(batch);
-        console.log(batches);
+
+        for (let i = 0; i < batch.length; i += this.batch_size) {
+            const smaller_batch = batch.slice(i, i + this.batch_size);
+            batches.push(smaller_batch);
+        }
+
+        return batches;
+    }
+
+    async sendSecondBatches() {
+        const batches = this.createSecondBatches();
+
+        if (batches.length < 1) {
+            console.log("Batches was empty!");
+            return;
+        }
 
         for (const curr_batch of batches) {
+            if (curr_batch.length < 1) {
+                console.log("curr_batch was empty!");
+                continue;
+            }
+
             const completions = await this.sendBatch(curr_batch);
+
             this.increaseProgress(curr_batch.length);
+
             for (let i = 0; i < completions.length; i++) {
-                const completion_text =
-                    completions[i].data.choices[0].message.content;
-                const requirementID = this.findRequirementId(completion_text);
-                const requirementTests =
-                    this.findRequirementTests(completion_text);
-                this.setState((prevState) => ({
-                    requirementsWithTests: [
-                        ...prevState.requirementsWithTests,
-                        {
-                            ID: requirementID,
-                            tests: requirementTests,
-                        },
-                    ],
-                }));
+                const completion_text = completions[i].data.choices[0].message.content;
+                console.log(completion_text);
+
+                try {
+                    const obj = parseStringToObject(completion_text);
+                    this.props.addRequirementWithTests(obj);
+                } catch (err) {
+                    console.error(err);
+                    this.props.setErrorLabel(err);
+                }
             }
         }
     }
@@ -367,25 +327,17 @@ class Send extends Component {
         }
 
         this.props.resetAnalysisProgress();
+        this.props.setIsFinished(false);
         this.renderLoading(true);
-        this.props.setResultArray([]);
+        this.props.setRequirementsWithTests([]);
         this.setState({
             awaitingResponse: true,
         });
-        // This is a mock request function, could be a `request` call
-        // or a database query; whatever it is, it MUST return a Promise.
 
-        await this.sendFirstBatch();
+        await this.sendFirstBatches();
 
-        this.setReqAndTestObjects(
-            this.state.requirementObjects,
-            this.state.testObjects
-        );
-
-        await this.sendSecondBatch();
-        console.log(this.state);
-        console.log(this.state.requirementsWithTests);
-        this.props.setResultArray(this.state.requirementsWithTests);
+        await this.sendSecondBatches();
+        this.props.setIsFinished(true);
         this.setState({
             awaitingResponse: false,
         });
@@ -395,8 +347,12 @@ class Send extends Component {
         this.props.setLoadingFlag(bool);
     }
 
-    setReqAndTestObjects(requirementObjects, testObjects) {
-        this.props.setReqAndTestObjects(requirementObjects, testObjects);
+    setRequirementObjects() {
+        this.props.setRequirementObjects(this.state.requirementObjects);
+    }
+
+    setTestObjects() {
+        this.props.setTestObjects(this.state.testObjects);
     }
 
     render() {
@@ -414,10 +370,7 @@ class Send extends Component {
                         </span>
                     </button>
                 ) : (
-                    <button
-                        className="home-button3 button"
-                        onClick={this.handleSendClick}
-                    >
+                    <button className="home-button3 button" onClick={this.handleSendClick}>
                         <span className="home-text10">
                             <span>Run Analysis</span>
                             <br></br>
