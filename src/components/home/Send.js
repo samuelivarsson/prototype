@@ -10,13 +10,10 @@ class Send extends Component {
     constructor(props) {
         super(props);
         this.state = {
-            testObjects: [],
-            requirementObjects: [],
-            requirementsWithTests: [],
             awaitingResponse: false,
         };
         this.batch_size = 5;
-        this.testCasesPerRequirement = 3;
+        this.testCasesPerRequirement = 10;
         this.handleSendClick = this.handleSendClick.bind(this);
         this.sendBatch = this.sendBatch.bind(this);
         this.calculateNumOfBatches = this.calculateNumOfBatches.bind(this);
@@ -330,6 +327,8 @@ class Send extends Component {
         this.props.setIsFinished(false);
         this.renderLoading(true);
         this.props.setRequirementsWithTests([]);
+        this.props.setRequirementObjects([]);
+        this.props.setTestObjects([]);
         this.setState({
             awaitingResponse: true,
         });

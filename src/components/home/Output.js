@@ -132,6 +132,13 @@ class Output extends Component {
         }
     }
 
+    isNoTests(tests) {
+        return (
+            tests.length == 0 ||
+            tests.toLowerCase().includes("none" || tests.toLowerCase().includes("no"))
+        );
+    }
+
     renderResultRow(requirementId, tests) {
         return (
             <>
@@ -147,7 +154,7 @@ class Output extends Component {
                         <br></br>
                     </span>
                 </div>
-                {tests.length > 0 ? (
+                {!this.isNoTests(tests) ? (
                     <div className="output-col3">
                         <span className="output-row-text">Yes&nbsp;&nbsp;</span>
                         <svg viewBox="0 0 1024 1024" className="output-check">
@@ -164,7 +171,7 @@ class Output extends Component {
                 )}
                 <div className="output-col4">
                     <span className="output-row-text">
-                        {tests.length > 0 ? (
+                        {!this.isNoTests(tests) ? (
                             <>
                                 <span>{this.getTestCasesWithDescription(tests)}</span>
                                 <br></br>

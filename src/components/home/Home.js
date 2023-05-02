@@ -32,7 +32,9 @@ class Home extends Component {
         this.setIsFinished = this.setIsFinished.bind(this);
         this.setLoadingFlag = this.setLoadingFlag.bind(this);
         this.addRequirementObject = this.addRequirementObject.bind(this);
+        this.setRequirementObjects = this.setRequirementObjects.bind(this);
         this.addTestObject = this.addTestObject.bind(this);
+        this.setTestObjects = this.setTestObjects.bind(this);
     }
 
     componentDidMount() {
@@ -99,8 +101,16 @@ class Home extends Component {
         this.requirementObjects.push(obj);
     }
 
+    setRequirementObjects(objs) {
+        this.requirementObjects = objs;
+    }
+
     addTestObject(obj) {
         this.testObjects.push(obj);
+    }
+
+    setTestObjects(objs) {
+        this.testObjects = objs;
     }
 
     render() {
@@ -207,8 +217,10 @@ class Home extends Component {
                             setLoadingFlag={this.setLoadingFlag}
                             requirementObjects={this.requirementObjects}
                             addRequirementObject={this.addRequirementObject}
+                            setRequirementObjects={this.setRequirementObjects}
                             testObjects={this.testObjects}
                             addTestObject={this.addTestObject}
+                            setTestObjects={this.setTestObjects}
                             setErrorLabel={this.setErrorLabel}
                             resetAnalysisProgress={this.resetAnalysisProgress}
                             increaseAnalysisProgress={this.increaseAnalysisProgress}
