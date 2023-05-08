@@ -12,8 +12,11 @@ class Send extends Component {
         this.state = {
             awaitingResponse: false,
         };
-        this.batch_size = 5;
-        this.testCasesPerRequirement = 10;
+        this.batch_size = 10;
+        this.testCasesPerRequirement = 20;
+        this.currTokens = 0;
+        this.currSecond = 0;
+        this.totalTokens = 0;
         this.handleSendClick = this.handleSendClick.bind(this);
         this.sendBatch = this.sendBatch.bind(this);
         this.calculateNumOfBatches = this.calculateNumOfBatches.bind(this);
@@ -26,6 +29,7 @@ class Send extends Component {
         this.renderLoading = this.renderLoading.bind(this);
         this.setRequirementObjects = this.setRequirementObjects.bind(this);
         this.setTestObjects = this.setTestObjects.bind(this);
+        this.incrementSecond = this.incrementSecond.bind(this);
     }
 
     componentDidMount() {
@@ -149,13 +153,33 @@ class Send extends Component {
         }
     }
 
-    async sendBatch(batch) {
+    sleep(seconds) {
+        const ms = seconds * 1000;
+        return new Promise((resolve) => setTimeout(resolve, ms));
+    }
+
+    async sendBatch(batch, retry) {
         try {
-            console.log("-- sending batch --");
-            console.log(batch.length);
+            if (this.currTokens > 60000) {
+                // const secondsToWait = 60 - this.currSecond;
+                const secondsToWait = 60;
+                console.log("Waiting for " + secondsToWait + " seconds.");
+                await this.sleep(secondsToWait);
+                console.log("Resetting currSecond and currTokens...");
+                this.currSecond = 0;
+                this.totalTokens += this.currTokens;
+                this.currTokens = 0;
+            }
+            console.log("-- sending batch of size " + batch.length + " --");
             return await Promise.all(batch.map((f) => f()));
         } catch (err) {
             console.error(err);
+            if (err.response) {
+                if (err.response.status == 429 && retry < 10) {
+                    console.log(retry + " Retrying...");
+                    return await this.sendBatch(batch, retry + 1);
+                }
+            }
             this.props.setErrorLabel(err);
         }
     }
@@ -213,7 +237,7 @@ class Send extends Component {
                 continue;
             }
 
-            const completions = await this.sendBatch(curr_batch);
+            const completions = await this.sendBatch(curr_batch, 0);
 
             this.increaseProgress(curr_batch.length);
 
@@ -224,9 +248,11 @@ class Send extends Component {
                 return;
             }
 
+            var tokens = 0;
             for (let i = 0; i < completions.length; i++) {
+                tokens += completions[i].data.usage.total_tokens;
                 const completion_text = completions[i].data.choices[0].message.content;
-                console.log(completion_text);
+                // console.log(completion_text);
 
                 try {
                     const obj = parseStringToObject(completion_text);
@@ -236,10 +262,14 @@ class Send extends Component {
                         this.props.addRequirementObject(obj);
                     }
                 } catch (err) {
+                    console.log(completion_text);
                     console.error(err);
                     this.props.setErrorLabel(err);
                 }
             }
+            this.currTokens += tokens;
+            console.log("tokens for this batch: " + tokens);
+            console.log("currTokens: " + this.currTokens);
         }
     }
 
@@ -277,13 +307,15 @@ class Send extends Component {
                 continue;
             }
 
-            const completions = await this.sendBatch(curr_batch);
+            const completions = await this.sendBatch(curr_batch, 0);
 
             this.increaseProgress(curr_batch.length);
 
+            var tokens = 0;
             for (let i = 0; i < completions.length; i++) {
+                tokens += completions[i].data.usage.total_tokens;
                 const completion_text = completions[i].data.choices[0].message.content;
-                console.log(completion_text);
+                // console.log(completion_text);
 
                 try {
                     const obj = parseStringToObject(completion_text);
@@ -293,10 +325,20 @@ class Send extends Component {
                     this.props.setErrorLabel(err);
                 }
             }
+            this.currTokens += tokens;
+            console.log("tokens for this batch: " + tokens);
+            console.log("currTokens: " + this.currTokens);
         }
     }
 
+    incrementSecond() {
+        this.currSecond += 1;
+    }
+
     async handleSendClick() {
+        console.time("analysisTime");
+        setInterval(this.incrementSecond, 1000);
+
         if (this.state.awaitingResponse) {
             console.log("You are already analyzing!");
             return;
@@ -340,6 +382,10 @@ class Send extends Component {
         this.setState({
             awaitingResponse: false,
         });
+        console.timeEnd("analysisTime");
+
+        this.totalTokens += this.currTokens;
+        console.log("Total tokens used: " + this.totalTokens);
     }
 
     renderLoading(bool) {
