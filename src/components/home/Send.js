@@ -4,7 +4,6 @@ import { Configuration, OpenAIApi } from "openai";
 import "./Home.css";
 import { testPrompt, requirementPrompt, requirementIsTestedPrompt } from "./Prompt";
 import { parseStringToObject } from "./ResponseParser";
-// import readlineSync from "readline-sync";
 
 class Send extends Component {
     constructor(props) {
@@ -62,6 +61,7 @@ class Send extends Component {
             this.props.requirementsArray[0] + "\n" + this.props.requirementsArray[index]
         );
         messages.push({ role: "user", content: user_input });
+        // console.log(user_input);
 
         try {
             return openai.createChatCompletion({
@@ -96,6 +96,7 @@ class Send extends Component {
         const messages = [];
         const user_input = testPrompt(this.props.testArray[0] + "\n" + this.props.testArray[index]);
         messages.push({ role: "user", content: user_input });
+        // console.log(user_input);
 
         try {
             return openai.createChatCompletion({
@@ -133,7 +134,7 @@ class Send extends Component {
             JSON.stringify(this.props.requirementObjects[index])
         );
         messages.push({ role: "user", content: user_input });
-        console.log(user_input);
+        // console.log(user_input);
 
         try {
             return openai.createChatCompletion({
@@ -252,6 +253,9 @@ class Send extends Component {
             for (let i = 0; i < completions.length; i++) {
                 tokens += completions[i].data.usage.total_tokens;
                 const completion_text = completions[i].data.choices[0].message.content;
+                console.log("\nTokens for " + completion_text);
+                console.log(completions[i].data.usage);
+                console.log("\n");
                 // console.log(completion_text);
 
                 try {
@@ -315,6 +319,9 @@ class Send extends Component {
             for (let i = 0; i < completions.length; i++) {
                 tokens += completions[i].data.usage.total_tokens;
                 const completion_text = completions[i].data.choices[0].message.content;
+                console.log("\nTokens for " + completion_text);
+                console.log(completions[i].data.usage);
+                console.log("\n");
                 // console.log(completion_text);
 
                 try {
