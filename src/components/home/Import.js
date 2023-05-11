@@ -7,10 +7,6 @@ class Import extends Component {
         super(props);
         this.handleRequirementImport = this.handleRequirementImport.bind(this);
         this.handleTestImport = this.handleTestImport.bind(this);
-        this.state = {
-            chosenRequirementFile: null,
-            chosenTestFile: null,
-        };
     }
 
     componentDidMount() {
@@ -53,9 +49,9 @@ class Import extends Component {
 
                 this.props.setRequirementsArray(rows);
 
-                this.setState({
-                    chosenRequirementFile: requirementsFile.name,
-                });
+                this.props.setChosenRequirementFile(requirementsFile.name);
+
+                requirementsInput.value = null;
             },
             "error",
             () => {
@@ -83,9 +79,10 @@ class Import extends Component {
                 var rows = CSVConcat(CSVToArray(testReader.result, ","));
 
                 this.props.setTestArray(rows);
-                this.setState({
-                    chosenTestFile: testFile.name,
-                });
+
+                this.props.setChosenTestFile(testFile.name);
+
+                testInput.value = null;
             },
             "error",
             () => {
@@ -103,8 +100,8 @@ class Import extends Component {
                 <button className="home-button1 button" onClick={this.openRequirementsFile}>
                     <span className="home-text04">
                         <span>
-                            {this.state.chosenRequirementFile
-                                ? this.state.chosenRequirementFile
+                            {this.props.chosenRequirementFile
+                                ? this.props.chosenRequirementFile
                                 : "Choose Requirements File"}
                         </span>
                         <br></br>
@@ -121,8 +118,8 @@ class Import extends Component {
                 <button className="home-button2 button" onClick={this.openTestFile}>
                     <span className="home-text07">
                         <span>
-                            {this.state.chosenTestFile
-                                ? this.state.chosenTestFile
+                            {this.props.chosenTestFile
+                                ? this.props.chosenTestFile
                                 : "Choose Test file"}
                         </span>
                         <br></br>

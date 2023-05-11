@@ -10,8 +10,8 @@ class Home extends Component {
     constructor(props) {
         super(props);
         this.state = {
-            prompt: "",
-            output: "error",
+            chosenRequirementFile: null,
+            chosenTestFile: null,
             requirementsArray: "",
             testArray: "",
             requirementsWithTests: [],
@@ -22,6 +22,8 @@ class Home extends Component {
         };
         this.requirementObjects = [];
         this.testObjects = [];
+        this.setChosenRequirementFile = this.setChosenRequirementFile.bind(this);
+        this.setChosenTestFile = this.setChosenTestFile.bind(this);
         this.setErrorLabel = this.setErrorLabel.bind(this);
         this.resetAnalysisProgress = this.resetAnalysisProgress.bind(this);
         this.increaseAnalysisProgress = this.increaseAnalysisProgress.bind(this);
@@ -35,11 +37,18 @@ class Home extends Component {
         this.setRequirementObjects = this.setRequirementObjects.bind(this);
         this.addTestObject = this.addTestObject.bind(this);
         this.setTestObjects = this.setTestObjects.bind(this);
+        this.handleNewAnalysis = this.handleNewAnalysis.bind(this);
     }
 
-    componentDidMount() {
-        this.setState((state, props) => {
-            return { output: "Hejsan" };
+    setChosenRequirementFile(file) {
+        this.setState({
+            chosenRequirementFile: file,
+        });
+    }
+
+    setChosenTestFile(file) {
+        this.setState({
+            chosenTestFile: file,
         });
     }
 
@@ -95,6 +104,11 @@ class Home extends Component {
         this.setState({
             isLoading: bool,
         });
+        if (bool) {
+            document.getElementById("home-bottom-buttonsId").style.display = "none";
+        } else {
+            document.getElementById("home-bottom-buttonsId").style.display = "flex";
+        }
     }
 
     addRequirementObject(obj) {
@@ -111,6 +125,19 @@ class Home extends Component {
 
     setTestObjects(objs) {
         this.testObjects = objs;
+    }
+
+    handleNewAnalysis() {
+        this.setChosenRequirementFile(null);
+        this.setChosenTestFile(null);
+        this.setRequirementsArray("");
+        this.setTestArray("");
+        this.setIsFinished(false);
+        this.setLoadingFlag(false);
+        this.setRequirementObjects([]);
+        this.setTestObjects([]);
+        this.setRequirementsWithTests([]);
+        this.resetAnalysisProgress();
     }
 
     render() {
@@ -133,7 +160,15 @@ class Home extends Component {
                     </div>
                 )}
                 <div className="home-side-bar">
-                    <button className="home-button button">
+                    <button
+                        className="home-button button"
+                        onClick={this.handleNewAnalysis}
+                        disabled={
+                            this.state.isLoading &&
+                            this.state.requirementsWithTests.length == 0 &&
+                            !this.state.isFinished
+                        }
+                    >
                         <span className="home-text">
                             <span>+ New Analysis</span>
                             <br></br>
@@ -200,15 +235,18 @@ class Home extends Component {
                             </div>
                         </div>
                     )}
-                    <div className="home-bottom-buttons">
+                    <div className="home-bottom-buttons" id="home-bottom-buttonsId">
                         <Import
+                            setChosenRequirementFile={this.setChosenRequirementFile}
+                            setChosenTestFile={this.setChosenTestFile}
+                            chosenRequirementFile={this.state.chosenRequirementFile}
+                            chosenTestFile={this.state.chosenTestFile}
                             setTestArray={this.setTestArray}
                             setRequirementsArray={this.setRequirementsArray}
                             setErrorLabel={this.setErrorLabel}
                         />
 
                         <Send
-                            prompt={this.state.prompt}
                             requirementsArray={this.state.requirementsArray}
                             testArray={this.state.testArray}
                             addRequirementWithTests={this.addRequirementWithTests}
