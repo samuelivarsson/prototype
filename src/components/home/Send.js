@@ -3,7 +3,7 @@ import PropTypes from "prop-types";
 import { Configuration, OpenAIApi } from "openai";
 import "./Home.css";
 import { testPrompt, requirementPrompt, requirementIsTestedPrompt } from "./Prompt";
-import { parseStringToObject } from "./ResponseParser";
+import { parseStringToObject, mergeObjectsWithSameId } from "./ResponseParser";
 
 class Send extends Component {
     constructor(props) {
@@ -65,7 +65,7 @@ class Send extends Component {
 
         try {
             return openai.createChatCompletion({
-                model: "gpt-3.5-turbo-0301",
+                model: "gpt-3.5-turbo",
                 messages: messages,
                 temperature: 0.7,
             });
@@ -100,7 +100,7 @@ class Send extends Component {
 
         try {
             return openai.createChatCompletion({
-                model: "gpt-3.5-turbo-0301",
+                model: "gpt-3.5-turbo",
                 messages: messages,
                 temperature: 0.7,
             });
@@ -138,7 +138,7 @@ class Send extends Component {
 
         try {
             return openai.createChatCompletion({
-                model: "gpt-3.5-turbo-0301",
+                model: "gpt-3.5-turbo",
                 messages: messages,
                 temperature: 0.7,
             });
@@ -328,6 +328,7 @@ class Send extends Component {
                     const obj = parseStringToObject(completion_text);
                     this.props.addRequirementWithTests(obj);
                 } catch (err) {
+                    console.log(completion_text);
                     console.error(err);
                     this.props.setErrorLabel(err);
                 }
@@ -385,11 +386,19 @@ class Send extends Component {
         await this.sendFirstBatches();
 
         await this.sendSecondBatches();
+
+        console.log(this.props.requirementsWithTests);
+        this.props.setMergedRequirementsWithTests(
+            mergeObjectsWithSameId([...this.props.requirementsWithTests])
+        );
+        console.log(this.props.mergedRequirementsWithTests);
+
         this.props.setIsFinished(true);
         this.setState({
             awaitingResponse: false,
         });
         console.timeEnd("analysisTime");
+        console.timeEnd("useTime");
 
         this.totalTokens += this.currTokens;
         console.log("Total tokens used: " + this.totalTokens);

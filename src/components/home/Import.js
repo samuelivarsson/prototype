@@ -31,6 +31,8 @@ class Import extends Component {
     }
 
     handleRequirementImport() {
+        console.time("useTime");
+
         var requirementsInput = document.getElementById("requirementsFile");
         var requirementsFile = requirementsInput.files[0];
         let requirementsReader = new FileReader();

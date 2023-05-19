@@ -3,7 +3,7 @@ import PropTypes from "prop-types";
 import "./Output.css";
 import { testSuggestionPrompt } from "./Prompt";
 import { Configuration, OpenAIApi } from "openai";
-import { mergeObjectsWithSameId } from "./ResponseParser";
+import { isNoTests } from "./ResponseParser";
 
 class Output extends Component {
     constructor(props) {
@@ -60,10 +60,7 @@ class Output extends Component {
             return;
         }
 
-        console.log(this.props.requirementsWithTests);
-        var mergedArr = mergeObjectsWithSameId([...this.props.requirementsWithTests]);
-        console.log(mergedArr);
-        return mergedArr.map((result) => {
+        return this.props.mergedRequirementsWithTests.map((result) => {
             return (
                 <div key={result.requirementID} className="output-row">
                     {this.renderResultRow(result.requirementID, result.tests)}
@@ -132,13 +129,6 @@ class Output extends Component {
         }
     }
 
-    isNoTests(tests) {
-        return (
-            tests.length == 0 ||
-            tests.toLowerCase().includes("none" || tests.toLowerCase().includes("no"))
-        );
-    }
-
     renderResultRow(requirementId, tests) {
         return (
             <>
@@ -154,7 +144,7 @@ class Output extends Component {
                         <br></br>
                     </span>
                 </div>
-                {!this.isNoTests(tests) ? (
+                {!isNoTests(tests) ? (
                     <div className="output-col3">
                         <span className="output-row-text">Yes&nbsp;&nbsp;</span>
                         <svg viewBox="0 0 1024 1024" className="output-check">
@@ -171,7 +161,7 @@ class Output extends Component {
                 )}
                 <div className="output-col4">
                     <span className="output-row-text">
-                        {!this.isNoTests(tests) ? (
+                        {!isNoTests(tests) ? (
                             <>
                                 <span>{this.getTestCasesWithDescription(tests)}</span>
                                 <br></br>

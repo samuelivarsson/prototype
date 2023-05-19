@@ -14,7 +14,7 @@ class Home extends Component {
             chosenTestFile: null,
             requirementsArray: "",
             testArray: "",
-            requirementsWithTests: [],
+            mergedRequirementsWithTests: [],
             isFinished: false,
             isLoading: false,
             errorLabel: "",
@@ -22,6 +22,7 @@ class Home extends Component {
         };
         this.requirementObjects = [];
         this.testObjects = [];
+        this.requirementsWithTests = [];
         this.setChosenRequirementFile = this.setChosenRequirementFile.bind(this);
         this.setChosenTestFile = this.setChosenTestFile.bind(this);
         this.setErrorLabel = this.setErrorLabel.bind(this);
@@ -31,6 +32,7 @@ class Home extends Component {
         this.setTestArray = this.setTestArray.bind(this);
         this.addRequirementWithTests = this.addRequirementWithTests.bind(this);
         this.setRequirementsWithTests = this.setRequirementsWithTests.bind(this);
+        this.setMergedRequirementsWithTests = this.setMergedRequirementsWithTests.bind(this);
         this.setIsFinished = this.setIsFinished.bind(this);
         this.setLoadingFlag = this.setLoadingFlag.bind(this);
         this.addRequirementObject = this.addRequirementObject.bind(this);
@@ -83,14 +85,16 @@ class Home extends Component {
     }
 
     addRequirementWithTests(obj) {
-        this.setState((prevState) => ({
-            requirementsWithTests: [...prevState.requirementsWithTests, obj],
-        }));
+        this.requirementsWithTests.push(obj);
     }
 
     setRequirementsWithTests(arr) {
+        this.requirementsWithTests = arr;
+    }
+
+    setMergedRequirementsWithTests(arr) {
         this.setState({
-            requirementsWithTests: arr,
+            mergedRequirementsWithTests: [...arr],
         });
     }
 
@@ -138,6 +142,7 @@ class Home extends Component {
         this.setTestObjects([]);
         this.setRequirementsWithTests([]);
         this.resetAnalysisProgress();
+        this.setMergedRequirementsWithTests([]);
     }
 
     render() {
@@ -165,7 +170,7 @@ class Home extends Component {
                         onClick={this.handleNewAnalysis}
                         disabled={
                             this.state.isLoading &&
-                            this.state.requirementsWithTests.length == 0 &&
+                            this.requirementsWithTests.length == 0 &&
                             !this.state.isFinished
                         }
                     >
@@ -177,10 +182,10 @@ class Home extends Component {
                 </div>
                 <div className="home-container1">
                     {this.state.isLoading ? (
-                        this.state.requirementsWithTests.length != 0 && this.state.isFinished ? (
+                        this.requirementsWithTests.length != 0 && this.state.isFinished ? (
                             <Output
                                 output={this.state.output}
-                                requirementsWithTests={this.state.requirementsWithTests}
+                                mergedRequirementsWithTests={this.state.mergedRequirementsWithTests}
                                 requirementObjects={this.requirementObjects}
                                 testObjects={this.testObjects}
                                 setErrorLabel={this.setErrorLabel}
@@ -249,8 +254,11 @@ class Home extends Component {
                         <Send
                             requirementsArray={this.state.requirementsArray}
                             testArray={this.state.testArray}
+                            requirementsWithTests={this.requirementsWithTests}
                             addRequirementWithTests={this.addRequirementWithTests}
                             setRequirementsWithTests={this.setRequirementsWithTests}
+                            mergedRequirementsWithTests={this.state.mergedRequirementsWithTests}
+                            setMergedRequirementsWithTests={this.setMergedRequirementsWithTests}
                             setIsFinished={this.setIsFinished}
                             setLoadingFlag={this.setLoadingFlag}
                             requirementObjects={this.requirementObjects}

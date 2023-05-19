@@ -47,11 +47,11 @@ describe("ResponseParser", () => {
     describe("mergeObjectsWithSameId", () => {
         it("should return merged array with no duplicate IDs and no missing test cases", () => {
             const tests = [
-                { requirementID: "RQ5", tests: "" },
-                { requirementID: "RQ5", tests: "" },
+                { requirementID: "RQ5", tests: "none" },
+                { requirementID: "RQ5", tests: "no" },
                 { requirementID: "RQ4", tests: "" },
-                { requirementID: "RQ4", tests: "" },
-                { requirementID: "RQ3", tests: "" },
+                { requirementID: "RQ4", tests: "n/a" },
+                { requirementID: "RQ3", tests: "none" },
                 { requirementID: "RQ3", tests: "TC_06" },
                 { requirementID: "RQ2", tests: "TC_02" },
                 { requirementID: "RQ2", tests: "TC_04" },

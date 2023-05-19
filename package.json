@@ -13,7 +13,7 @@
         "react-router-dom": "^5.2.0"
     },
     "scripts": {
-        "start": "BROWSER=none craco start",
+        "start": "BROWSER=none craco start --host=127.0.0.1",
         "build": "craco build",
         "test": "craco test --env=jsdom",
         "eject": "craco eject"
