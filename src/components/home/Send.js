@@ -240,14 +240,14 @@ class Send extends Component {
 
             const completions = await this.sendBatch(curr_batch, 0);
 
-            this.increaseProgress(curr_batch.length);
-
             if (completions == null) {
                 const errorLabel = "No completions were fetched!";
                 console.error(errorLabel);
                 this.props.setErrorLabel(errorLabel);
                 return;
             }
+
+            this.increaseProgress(curr_batch.length);
 
             var tokens = 0;
             for (let i = 0; i < completions.length; i++) {
@@ -312,6 +312,13 @@ class Send extends Component {
             }
 
             const completions = await this.sendBatch(curr_batch, 0);
+
+            if (completions == null) {
+                const errorLabel = "No completions were fetched!";
+                console.error(errorLabel);
+                this.props.setErrorLabel(errorLabel);
+                return;
+            }
 
             this.increaseProgress(curr_batch.length);
 
