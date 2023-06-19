@@ -176,7 +176,7 @@ class Send extends Component {
         } catch (err) {
             console.error(err);
             if (err.response) {
-                if (err.response.status == 429 && retry < 10) {
+                if ((err.response.status == 429 || err.response.status == 503) && retry < 10) {
                     console.log(retry + " Retrying...");
                     return await this.sendBatch(batch, retry + 1);
                 }
